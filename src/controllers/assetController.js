@@ -86,3 +86,5 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
         res.status(500).json({err: error})
     }
 }
+
+module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre }
