@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { editarRol } = require('./rolController');
+
 const login= async(req, res)=>{
     const {correo, password}= req.body;
     const usuario= await pool.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
@@ -16,6 +16,6 @@ const login= async(req, res)=>{
     };
     const token= jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: '1h'});
 
-    res.status(200).json({mensaje: 'Login exitoso', usuario: usuario.rows[0], token: token});
+    res.status(200).json({mensaje: 'Login exitoso', usuario: usuario.rows[0], token: token, codigo:200});
 }
 module.exports= {login};

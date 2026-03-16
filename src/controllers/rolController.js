@@ -4,10 +4,10 @@ const obtenerRoles= async(req, res)=>{
     try{
         const result= await pool.query('select * from rol');
         if(result.rowCount===0){
-            res.status(404).json({mensaje: 'No hay roles guardados', status: 404});
+            res.status(404).json({mensaje: 'No hay roles guardados', codigo: 404});
         }
         console.log(result);
-        res.status(200).json({mensaje: 'Roles obtenidos', status:200, data: result});
+        res.status(200).json({mensaje: 'Roles obtenidos', codigo: 200, data: result});
     }catch(e){
         console.log('error: '+e);
         res.status(500).json({mensaje:'Error en el servidor', error: e});
@@ -20,10 +20,10 @@ const registrarRol= async(req, res)=>{
             [nombre, descripcion]
         );
         console.log(`Datos insertados: \n${nombre}\n${descripcion}`);
-        res.status(201).json({mensaje: 'Rol creado con éxito', status: 201});
+        res.status(201).json({mensaje: 'Rol creado con éxito', codigo: 201});
     }catch(e){
         console.log(`error: ${e}`);
-    }
+        res.status(500).json({mensaje: 'Error en el servidor', codigo: 500, error: e});
 }
 const editarRol= async(req, res)=>{
     const {nombreNuevo, descripcion}= req.body;
@@ -34,7 +34,7 @@ const editarRol= async(req, res)=>{
         )
     }catch(e){
         console.log(`Error ${e}`);
-        res.status(500).json({mensaje:`Error en el servidor al modificar los datos`, status: 500, error:e});
+        res.status(500).json({mensaje:`Error en el servidor al modificar los datos`, codigo: 500, error:e});
     }
 }
 const eliminaRol= async(req, res)=>{
@@ -42,12 +42,12 @@ const eliminaRol= async(req, res)=>{
     try{
         const result= await pool.query('delete from rol where nombre= $1', [nombre]);
         if(result.affectedRows===0){
-            res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, status:404});
+            res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
         }
-        res.status(200).json({mensaje: `Rol ${nombre} eliminado correctamente`});
+        res.status(200).json({mensaje: `Rol ${nombre} eliminado correctamente`, codigo: 200});
     }catch(e){
         console.log(`Error al eliminar Rol: ${e}`);
-        res.status(500).json({mensaje: 'Error en el servidor al eliminar rol', error: e});
+        res.status(500).json({mensaje: 'Error en el servidor al eliminar rol', codigo: 500, error: e});
     }
 }
 

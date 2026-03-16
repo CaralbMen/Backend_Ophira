@@ -33,23 +33,23 @@ const crearUsuario= async(req, res)=>{
         const hashedPassword= await bcrypt.hash(password, salt);
         const result= await pool.query('INSERT INTO usuarios (nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
             [nombre, apaterno, amaterno, correo, hashedPassword, telefono, id_rol, id_puesto]);
-        res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0]});
+        res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0], codigo: 201});
     }catch(e){
         console.error(e);
-        res.status(500).json({message: 'Error al crear el usuario', error:e});
+        res.status(500).json({message: 'Error al crear el usuario', codigo: 500, error:e});
     }
 }
 const obtenerUsuarios= async(req, res)=>{
     try{
         const result= await pool.query('SELECT * FROM usuarios');
         if(result.rowCount===0){
-            res.status(404).json({mensaje: 'No hay usuarios guardados', status: 404});
+            res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }
         console.log(result);
-        res.status(200).json({mensaje: 'Usuarios obtenidos', status:200, data: result});
+        res.status(200).json({mensaje: 'Usuarios obtenidos', codigo: 200, data: result});
     }catch(e){
         console.log('error: '+e);
-        res.status(500).json({mensaje:'Error en el servidor', error: e});
+        res.status(500).json({mensaje:'Error en el servidor', codigo: 500, error: e});
     }
 }
 
@@ -61,13 +61,13 @@ const modificarUsuario= async(req, res)=>{
             [nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto, id]
         );
         if(result.affectedRows === 0){
-            res.status(404).json({mensaje: 'Usuario no encontrado', status: 404});
+            return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
 
-        res.status(200).json({mensaje: 'Usuario modificado exitosamente', usuario: result.rows[0]});
+        res.status(200).json({mensaje: 'Usuario modificado exitosamente', usuario: result.rows[0], codigo: 200});
     }catch(e){
         console.error(e);
-        res.status(500).json({message: 'Error al modificar el usuario', error: e});
+        res.status(500).json({message: 'Error al modificar el usuario', codigo: 500, error: e});
     }
 }
 const eliminarUsuario= async(req, res)=>{
@@ -75,12 +75,12 @@ const eliminarUsuario= async(req, res)=>{
     try{
         const result= await pool.query('DELETE FROM usuarios WHERE id=$1', [id]);
         if(result.affectedRows === 0){
-            res.status(404).json({mensaje: 'Usuario no encontrado', status: 404});
+            return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
-        res.status(200).json({mensaje: 'Usuario eliminado exitosamente'});
+        res.status(200).json({mensaje: 'Usuario eliminado exitosamente', codigo: 200});
     }catch(e){
         console.error(e);
-        res.status(500).json({message: 'Error al eliminar el usuario', error: e});
+        res.status(500).json({message: 'Error al eliminar el usuario', codigo: 500, error: e});
     }
 }
 
