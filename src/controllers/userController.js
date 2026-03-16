@@ -1,6 +1,8 @@
 const pool= require('../config/db');
 const bcrypt= require('bcrypt');
 
+
+
 const crearUsuario= async(req, res)=>{
     const {nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto}= req.body;
     if(!nombre) return res.status(400).json({message: 'El nombre es requerido'});

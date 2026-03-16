@@ -11,5 +11,5 @@ require('dotenv').config();
 app.use('/api/');
 app.use('/api/assets', assetRouter)
 
-const port= process.env.APP_PORT || 3000;
+const port= process.env.APP_PORT || 4000;
 app.listen(port, ()=>console.log(`Escuchando en el puerto ${port}`));
