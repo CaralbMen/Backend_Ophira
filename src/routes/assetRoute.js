@@ -10,3 +10,5 @@ router.post('/', assetController.crearActivo)
 router.get('/', assetController.verActivos)
 router.get('/id/:id', assetController.buscarActivoId)
 router.get('/nombre/:nombre', assetController.buscarActivoNombre)
+
+module.exports= router;

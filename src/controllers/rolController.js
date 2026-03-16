@@ -25,3 +25,30 @@ const registrarRol= async(req, res)=>{
         console.log(`error: ${e}`);
     }
 }
+const editarRol= async(req, res)=>{
+    const {nombreNuevo, descripcion}= req.body;
+    const nombre= req.params.nombre;
+    try{
+        const result= await pool.query('update rol set nombre= $1, descripcion= $2 where nombre= $3',
+            [nombreNuevo, descripcion, nombre]
+        )
+    }catch(e){
+        console.log(`Error ${e}`);
+        res.status(500).json({mensaje:`Error en el servidor al modificar los datos`, status: 500, error:e});
+    }
+}
+const eliminaRol= async(req, res)=>{
+    const nombre= req.params.nombre;
+    try{
+        const result= await pool.query('delete from rol where nombre= $1', [nombre]);
+        if(result.affectedRows===0){
+            res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, status:404});
+        }
+        res.status(200).json({mensaje: `Rol ${nombre} eliminado correctamente`});
+    }catch(e){
+        console.log(`Error al eliminar Rol: ${e}`);
+        res.status(500).json({mensaje: 'Error en el servidor al eliminar rol', error: e});
+    }
+}
+
+module.exports = {obtenerRoles, registrarRol, editarRol, eliminaRol};
