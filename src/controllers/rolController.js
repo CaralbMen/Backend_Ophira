@@ -24,6 +24,7 @@ const registrarRol= async(req, res)=>{
     }catch(e){
         console.log(`error: ${e}`);
         res.status(500).json({mensaje: 'Error en el servidor', codigo: 500, error: e});
+    }
 }
 const editarRol= async(req, res)=>{
     const {nombreNuevo, descripcion}= req.body;

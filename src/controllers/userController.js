@@ -15,8 +15,9 @@ const obtenerUsuario= async(req, res)=>{
     }
 }
 const crearUsuario= async(req, res)=>{
-    const {nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto}= req.body;
+    const {nombre, nickname, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto}= req.body;
     if(!nombre) return res.status(400).json({message: 'El nombre es requerido'});
+    if(!nickname) return res.status(400).json({message: 'El apodo es requerido'});
     if(!apaterno) return res.status(400).json({message: 'El apellido paterno es requerido'});
     if(!amaterno) return res.status(400).json({message: 'El apellido materno es requerido'});
     if(!correo) return res.status(400).json({message: 'El correo es requerido'});
@@ -31,8 +32,8 @@ const crearUsuario= async(req, res)=>{
     try{
         const salt= await bcrypt.genSalt(10);
         const hashedPassword= await bcrypt.hash(password, salt);
-        const result= await pool.query('INSERT INTO usuarios (nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [nombre, apaterno, amaterno, correo, hashedPassword, telefono, id_rol, id_puesto]);
+        const result= await pool.query('INSERT INTO usuarios (nombre, nickname, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [nombre, nickname, apaterno, amaterno, correo, hashedPassword, telefono, id_rol, id_puesto]);
         res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0], codigo: 201});
     }catch(e){
         console.error(e);

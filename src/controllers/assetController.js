@@ -21,7 +21,7 @@ const crearActivo = async (req, res) => {
         [datos.nombre, datos.descripcion, datos.modelo, datos.numero_serie, datos.fecha_compra, 
         datos.precio_compra, datos.id_categoria, datos.id_estado_activo, datos.id_aula])
         
-        res.status(200).json({msg: "Datos insertados exitosamente", datos: rows})
+        res.status(200).json({msg: "Datos insertados exitosamente", datos: rows, codigo: 200})
 
 
     } catch (e){
@@ -59,7 +59,7 @@ const buscarActivoId = async(req, res) => { // buscar activo por ID
             return res.status(404).json({msg: "Activo no encontrado"})
         }
 
-        res.status(200).json[{rows}]
+        res.status(200).json({rows, codigo: 200})
     } catch (e){
         console.log(e)
         res.status(500).json({err: error})
@@ -80,7 +80,7 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
             return res.status(404).json({msg: "Activo no encontrado"})
         }
 
-        res.status(200).json[{rows}]
+        res.status(200).json({rows, codigo: 200})
     } catch (e){
         console.log(e)
         res.status(500).json({err: error})
