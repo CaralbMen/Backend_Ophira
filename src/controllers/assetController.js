@@ -16,7 +16,7 @@ const crearActivo = async (req, res) => {
         const {rows} = await pool.query(`INSERT INTO activo 
             (nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
             `, 
         [datos.nombre, datos.descripcion, datos.modelo, datos.numero_serie, datos.fecha_compra, 
         datos.precio_compra, datos.id_categoria, datos.id_estado_activo, datos.id_aula])
@@ -26,7 +26,7 @@ const crearActivo = async (req, res) => {
 
     } catch (e){
         console.log(e)
-        res.status(500).json({err: error})
+        res.status(500).json({err: e})
     }
 }
 
@@ -38,10 +38,10 @@ const verActivos = async(req, res) => { // ver TODOS los activos
             JOIN aula au ON a.id_aula = au.id_aula
             `)
 
-        res.status(200).json[{rows}]
+        res.status(200).json({ rows })
     } catch (e){
         console.log(e)
-        res.status(500).json({err: error})
+        res.status(500).json({err: e})
     }
 }
 
@@ -62,7 +62,7 @@ const buscarActivoId = async(req, res) => { // buscar activo por ID
         res.status(200).json({rows, codigo: 200})
     } catch (e){
         console.log(e)
-        res.status(500).json({err: error})
+        res.status(500).json({err: e})
     }
 }
 
@@ -83,8 +83,79 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
         res.status(200).json({rows, codigo: 200})
     } catch (e){
         console.log(e)
-        res.status(500).json({err: error})
+        res.status(500).json({err: e})
     }
 }
 
-module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre }
+const dropActivo = async(req, res) => {
+    const id = req.params.id
+    try {
+        const r =await pool.query('DELETE FROM activo WHERE id_activo = $1 RETURNING *', [id])
+
+
+        if(r.rowCount===0){
+            return res.status(404).json({msg: "Activo no encontrado"})
+        }
+
+
+        res.status(200).json({msg: "Activo eliminado exitosamente", activo: r.rows[0]})
+
+
+    } catch (e){
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
+
+
+const editarActivo = async(req, res) => {
+    const {id_activo, nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula} = req.body
+
+
+    try {
+        const { rows } = await pool.query('SELECT * FROM activo WHERE id_activo = $1', [id_activo])
+        const activo = rows[0]
+
+        if (rows.length === 0){
+            return res.status(404).json({msg: "Activo no encontrado"})
+        }
+
+        const r = await pool.query(`
+            UPDATE activo SET
+            nombre = $2,
+            descripcion = $3,
+            modelo = $4,
+            numero_serie = $5,
+            fecha_compra = $6,
+            precio_compra = $7,
+            id_categoria = $8,
+            id_estado_activo = $9,
+            id_aula = $10
+            WHERE id_activo = $1 RETURNING *
+        `,
+        [
+            id_activo,
+            nombre || activo.nombre,
+            descripcion || activo.descripcion,
+            modelo || activo.modelo,
+            numero_serie || activo.numero_serie,
+            fecha_compra || activo.fecha_compra,
+            precio_compra || activo.precio_compra,
+            id_categoria || activo.id_categoria,
+            id_estado_activo || activo.id_estado_activo,
+            id_aula || activo.id_aula
+        ])
+
+
+
+        res.status(200).json({msg: "Activo actualizado exitosamente", activo: r.rows[0]})
+
+
+    } catch (e){
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
+
+
+module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo }
