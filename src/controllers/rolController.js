@@ -16,7 +16,7 @@ const obtenerRoles= async(req, res)=>{
 const registrarRol= async(req, res)=>{
     const {nombre, descripcion}= req.body;
     try{
-        await pool.query('insert into rol (nombre, descripcion) values returning *',
+        await pool.query('insert into rol (nombre, descripcion) values ($1, $2)',
             [nombre, descripcion]
         );
         console.log(`Datos insertados: \n${nombre}\n${descripcion}`);
@@ -33,6 +33,10 @@ const editarRol= async(req, res)=>{
         const result= await pool.query('update rol set nombre= $1, descripcion= $2 where nombre= $3',
             [nombreNuevo, descripcion, nombre]
         )
+        if(result.affectedRows===0){
+            res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
+        }
+        res.status(200).json({mensaje: `Rol ${nombre} actualizado correctamente`, codigo: 200});
     }catch(e){
         console.log(`Error ${e}`);
         res.status(500).json({mensaje:`Error en el servidor al modificar los datos`, codigo: 500, error:e});
