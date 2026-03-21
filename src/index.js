@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 require('dotenv').config();
 
-app.use('/api/');
+// app.use('/api/');
 app.use('/api/assets', assetRouter);
 app.use('/api/roles', rolRouter);
 app.use('/api/usuarios', userRouter);

@@ -1,12 +1,12 @@
 const pool= require('../config/db');
-const bcrypt= require('bcrypt');
+const bcrypt= require('bcryptjs');
 
 
 const obtenerUsuario= async(req, res)=>{
     const id = req.params.id;
-    if(!correo) return res.status(400).json({message: 'El correo es requerido'});
+    if(!id) return res.status(400).json({message: 'El ID es requerido'});
     try{
-        const usuario= await pool.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
+        const usuario= await pool.query('SELECT * FROM usuario WHERE id = $1', [id]);
         if(usuario.rows.length === 0) return null;
         return usuario.rows[0];
     }catch(e){
@@ -15,35 +15,39 @@ const obtenerUsuario= async(req, res)=>{
     }
 }
 const crearUsuario= async(req, res)=>{
-    const {nombre, apodo, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto, id_area}= req.body;
+    const {nombre, apaterno, amaterno, correo, telefono, id_rol, id_puesto, password}= req.body;
     if(!nombre) return res.status(400).json({message: 'El nombre es requerido'});
-    if(!apodo) return res.status(400).json({message: 'El apodo es requerido'});
     if(!apaterno) return res.status(400).json({message: 'El apellido paterno es requerido'});
     if(!amaterno) return res.status(400).json({message: 'El apellido materno es requerido'});
     if(!correo) return res.status(400).json({message: 'El correo es requerido'});
-    const usuario= await pool.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
-    if(usuario.rows.length > 0){
-        return res.status(400).json({mensaje: 'Este correo ya está registrado. Intenta con otro.'});
-    }
-    if(!password) return res.status(400).json({message: 'La contraseña es requerida'});
-    if(!telefono) return res.status(400).json({message: 'El teléfono es requerido'});
-    if(!id_rol) return res.status(400).json({message: 'El id del rol es requerido'});
-    if(!id_puesto) return res.status(400).json({message: 'El id del puesto es requerido'});
-    if(!id_area) return res.status(400).json({message: 'El id del área es requerido'});
     try{
-        const salt= await bcrypt.genSalt(10);
-        const hashedPassword= await bcrypt.hash(password, salt);
-        const result= await pool.query('INSERT INTO usuario (nombre, apaterno, amaterno, apodo, correo, password, telefono, id_rol, id_puesto, id_area) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-            [nombre, apodo, apaterno, amaterno, correo, hashedPassword, telefono, id_rol, id_puesto, id_area]);
-        res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0], codigo: 201});
+        const usuario= await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
+        if(usuario.rows.length > 0){
+            return res.status(400).json({mensaje: 'Este correo ya está registrado. Intenta con otro.'});
+        }
+        if(!telefono) return res.status(400).json({message: 'El teléfono es requerido'});
+        if(!id_rol) return res.status(400).json({message: 'El id del rol es requerido'});
+        if(!id_puesto) return res.status(400).json({message: 'El id del puesto es requerido'});
+        if(!password) return res.status(400).json({message: 'La contraseña es requerida'});
+        try{
+            const salt= await bcrypt.genSalt(10);
+            const hashedPassword= await bcrypt.hash(password, salt);
+            const result= await pool.query('INSERT INTO usuario (nombre_usuario, apellido_paterno, apellido_materno, correo, telefono, id_rol, id_puesto, password) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                [nombre, apaterno, amaterno, correo, telefono, id_rol, id_puesto, hashedPassword]);
+            res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0], codigo: 201});
+        }catch(e){
+            console.error(e);
+            res.status(500).json({message: 'Error al crear el usuario', codigo: 500, error:e});
+        }
     }catch(e){
         console.error(e);
-        res.status(500).json({message: 'Error al crear el usuario', codigo: 500, error:e});
+        res.status(500).json({message: 'Error al verificar el correo', codigo: 500, error: e});
     }
+    
 }
 const obtenerUsuarios= async(req, res)=>{
     try{
-        const result= await pool.query('SELECT * FROM usuarios');
+        const result= await pool.query('SELECT * FROM usuario');
         if(result.rowCount===0){
             res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }
@@ -59,7 +63,7 @@ const modificarUsuario= async(req, res)=>{
     const {nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto}= req.body;
     const id= req.params.id;
     try{
-        const result= await pool.query('UPDATE usuarios SET nombre=$1, apaterno=$2, amaterno=$3, correo=$4, password=$5, telefono=$6, id_rol=$7, id_puesto=$8 WHERE id=$9',
+        const result= await pool.query('UPDATE usuario SET nombre_usuario=$1, apellido_paterno=$2, apellido_materno=$3, correo=$4, telefono=$5, id_rol=$6, id_puesto=$7 WHERE id=$9',
             [nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto, id]
         );
         if(result.affectedRows === 0){
@@ -75,7 +79,7 @@ const modificarUsuario= async(req, res)=>{
 const eliminarUsuario= async(req, res)=>{
     const id= req.params.id;
     try{
-        const result= await pool.query('DELETE FROM usuarios WHERE id=$1', [id]);
+        const result= await pool.query('DELETE FROM usuario WHERE id=$1', [id]);
         if(result.affectedRows === 0){
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
@@ -86,4 +90,4 @@ const eliminarUsuario= async(req, res)=>{
     }
 }
 
-module.exports= {crearUsuario, login, obtenerUsuarios, obtenerUsuario, modificarUsuario, eliminarUsuario};
+module.exports= {crearUsuario, obtenerUsuarios, obtenerUsuario, modificarUsuario, eliminarUsuario};
