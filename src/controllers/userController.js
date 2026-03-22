@@ -6,12 +6,13 @@ const obtenerUsuario= async(req, res)=>{
     const id = req.params.id;
     if(!id) return res.status(400).json({message: 'El ID es requerido'});
     try{
-        const usuario= await pool.query('SELECT * FROM usuario WHERE id = $1', [id]);
-        if(usuario.rows.length === 0) return null;
-        return usuario.rows[0];
+        console.log('ID recibido: ', id);
+        const usuario= await pool.query('SELECT * FROM usuario WHERE id_usuario = $1', [id]);
+        if(usuario.rows.length === 0) return res.status(404).json({message: 'Usuario no encontrado', codigo: 404});
+        res.status(200).json({codigo: 200, usuario: usuario.rows[0]});
     }catch(e){
         console.error(e);
-        return null;
+        return res.status(500).json({message: 'Error en el servidor', codigo: 500, error: e});
     }
 }
 const crearUsuario= async(req, res)=>{
@@ -60,11 +61,29 @@ const obtenerUsuarios= async(req, res)=>{
 }
 
 const modificarUsuario= async(req, res)=>{
-    const {nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto}= req.body;
+    const {nombre= '', apaterno= '', amaterno= '', correo= '', telefono= '', id_rol= '', id_puesto= '', password= ''}= req.body;
     const id= req.params.id;
     try{
-        const result= await pool.query('UPDATE usuario SET nombre_usuario=$1, apellido_paterno=$2, apellido_materno=$3, correo=$4, telefono=$5, id_rol=$6, id_puesto=$7 WHERE id=$9',
-            [nombre, apaterno, amaterno, correo, password, telefono, id_rol, id_puesto, id]
+        const usuario= await pool.query('SELECT * FROM usuario WHERE id_usuario = $1', [id]);
+        if(usuario.rows.length === 0){
+            return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
+        }
+
+        if(nombre) usuario.rows[0].nombre_usuario= nombre;
+        if(apaterno) usuario.rows[0].apellido_paterno= apaterno;
+        if(amaterno) usuario.rows[0].apellido_materno= amaterno;
+        if(correo) usuario.rows[0].correo= correo;
+        if(password){
+            const salt= await bcrypt.genSalt(10);
+            const hashedPassword= await bcrypt.hash(password, salt);
+            usuario.rows[0].password= hashedPassword;
+        }
+        if(telefono) usuario.rows[0].telefono= telefono;
+        if(id_rol) usuario.rows[0].id_rol= id_rol;
+        if(id_puesto) usuario.rows[0].id_puesto= id_puesto;
+        
+        const result= await pool.query('UPDATE usuario SET nombre_usuario=$1, apellido_paterno=$2, apellido_materno=$3, correo=$4, password=$5, telefono=$6, id_rol=$7, id_puesto=$8 WHERE id_usuario=$9 RETURNING *',
+            [usuario.rows[0].nombre_usuario, usuario.rows[0].apellido_paterno, usuario.rows[0].apellido_materno, usuario.rows[0].correo, usuario.rows[0].password, usuario.rows[0].telefono, usuario.rows[0].id_rol, usuario.rows[0].id_puesto, id]
         );
         if(result.affectedRows === 0){
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
