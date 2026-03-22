@@ -30,8 +30,15 @@ const editarRol= async(req, res)=>{
     const {nombreNuevo, descripcion}= req.body;
     const nombre= req.params.nombre;
     try{
+        const rol= await pool.query('select * from rol where nombre= $1', [nombre]);
+        if(rol.rows.length === 0){
+            return res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
+        }
+        if(nombreNuevo) rol.rows[0].nombre= nombreNuevo;
+        if(descripcion) rol.rows[0].descripcion= descripcion;
+
         const result= await pool.query('update rol set nombre= $1, descripcion= $2 where nombre= $3',
-            [nombreNuevo, descripcion, nombre]
+            [rol.rows[0].nombre, rol.rows[0].descripcion, nombre]
         )
         if(result.affectedRows===0){
             res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
