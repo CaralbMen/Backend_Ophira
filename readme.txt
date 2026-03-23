@@ -1,7 +1,9 @@
 ENDPOINTS PARA CONSUMIR LA API
 
-ASSETS 
-    - Crear  
+ASSETS
+ URL base => localhost:4000/api/assets
+ 
+    - Crear ACTIVO
         post => localhost:4000/api/assets/
         body:{
         "nombre": "nombre",
@@ -18,29 +20,9 @@ ASSETS
     - Listar todos los activos
         get => localhost:4000/api/assets/
 
-    - Buscar un activo por id
-        get => localhost:4000/api/assets/id/[id]
-    
-    - Buscar por nombre
-        get => localhost:4000/api/assets/nombre/[nombre]
-    
-    - Eliminar
-        delete => localhost:4000/api/assets/[id]
-    
-    - Editar    
-        put => localhost:4000/api/assets/[id]
-        body:{
-            "nombre": "nombre",
-            "descripcion": "descripcion",
-            "modelo": "modelo",
-            "numero_serie": "numero_serie",
-            "fecha_compra":"fecha_compra",
-            "precio_compra": "precio_compra",
-            "id_categoria": "id_categoria",
-            "id_estado_activo":"id_estado_activo",
-            "id_aula":"id_aula"
-        }
 USUARIOS
+URL base => localhost:4000/api/usuarios
+
     - Crear
         post => localhost:4000/api/usuarios
         body: {
@@ -103,3 +85,28 @@ ROLES
         delete => localhost:4000/api/roles/[nombre]
 
 
+AUDITORIAS
+URL base => localhost:4000/api/auditorias
+
+    - Crear auditoría
+        post => localhost:4000/api/auditorias/
+        body: {
+            "id_movimiento": "1",
+            "id_usuario_auditor": "1",
+            "observaciones": "aughgh"
+        }
+
+    - Obtener todas las auditorías
+        get => localhost:4000/api/auditorias/
+
+    - Obtener auditoría por id
+        get => localhost:4000/api/auditorias/[id]
+
+    - Editar auditoría
+        put => localhost:4000/api/auditorias/[id]
+        body: {
+            "observaciones": "aughg"
+        }
+
+    - Eliminar auditoría
+        delete => localhost:4000/api/auditorias/[id]
