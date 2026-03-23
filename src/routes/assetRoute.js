@@ -12,7 +12,7 @@ router.get('/id/:id', assetController.buscarActivoId)
 router.get('/nombre/:nombre', assetController.buscarActivoNombre)
 
 // EDITAR Y ELIMINAR
-router.delete('/', assetController.dropActivo)
-router.put('/', assetController.editarActivo)
+router.delete('/:id', assetController.dropActivo)
+router.put('/:id', assetController.editarActivo)
 
 module.exports= router;

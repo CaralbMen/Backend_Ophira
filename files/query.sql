@@ -1,3 +1,6 @@
+create database PI;
+
+
 CREATE TABLE rol (
     id_rol SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE,
@@ -22,14 +25,14 @@ CREATE TABLE puesto (
 CREATE TABLE usuario (
     id_usuario SERIAL PRIMARY KEY,
     nombre_usuario VARCHAR(100) NOT NULL UNIQUE,
-    nombre VARCHAR(150) NOT NULL,
+    nombre VARCHAR(150) default null,
     apellido_paterno VARCHAR(150) NOT NULL,
     apellido_materno VARCHAR(150),
     correo VARCHAR(200) NOT NULL UNIQUE,
     telefono VARCHAR(20),
     fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_rol INTEGER NOT NULL,
-    id_puesto INTEGER NOT NULL,
+	id_puesto INTEGER NOT NULL,
     password VARCHAR(255) NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT true,
     CONSTRAINT fk_usuario_rol
@@ -41,37 +44,68 @@ CREATE TABLE usuario (
         REFERENCES puesto(id_puesto)
         ON DELETE RESTRICT
 );
+select * from usuario;
 
+-- Hasta aqui todo creado
+-- Pruebas para las localizaciones
+-- drop table edificio;
 CREATE TABLE edificio (
-    id_edificio SERIAL PRIMARY KEY,
+    id_edificio varchar(10) PRIMARY KEY, -- C, B, D, LT1, CIDEA
     nombre VARCHAR(150) NOT NULL,
-    numero_pisos INTEGER NOT NULL CHECK (numero_pisos > 0)
+    cantidad_pisos INTEGER NOT NULL CHECK (cantidad_pisos > 0),
+	direccion text not null
 );
 
+insert into edificio values
+('A', 'Principal', 2, 'UPQ'),
+('B', 'B', 2, 'UPQ');
+
+select * from edificio;
+
+
+drop table piso; 
 CREATE TABLE piso (
-    id_piso SERIAL PRIMARY KEY,
+	id_piso varchar(10) primary key,
+	id_edificio varchar(10) NOT NULL,
     numero_piso INTEGER NOT NULL,
-    id_edificio INTEGER NOT NULL,
+	cantidad_aulas integer not null check(cantidad_aulas>0),
     CONSTRAINT fk_piso_edificio
         FOREIGN KEY (id_edificio)
         REFERENCES edificio(id_edificio)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+	constraint u_piso unique(id_edificio, numero_piso) -- C1, B2...
 );
 
+insert into piso values
+('A1', 'A', 1, 8);
+
+select * from piso;
+
+drop table aula;
 CREATE TABLE aula (
-    id_aula SERIAL PRIMARY KEY,
+    id_aula varchar(10) PRIMARY KEY,
+	id_piso varchar(10) NOT NULL,
     numero_aula VARCHAR(50) NOT NULL,
-    id_piso INTEGER NOT NULL,
+    
     CONSTRAINT fk_aula_piso
         FOREIGN KEY (id_piso)
         REFERENCES piso(id_piso)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+	constraint u_aula unique(id_piso, numero_aula)
 );
+insert into aula values
+('A105', 'A1', 5);
+select * from aula;
+
 
 CREATE TABLE estado_activo (
     id_estado_activo SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE
 );
+insert into estado_activo (nombre) values
+()
+select * from estado_activo;
+
 
 CREATE TABLE metodo_depreciacion (
     id_metodo_depreciacion SERIAL PRIMARY KEY,
@@ -145,6 +179,7 @@ CREATE TABLE movimiento (
         REFERENCES activo(id_activo)
 );
 
+
 CREATE TABLE movimiento_actualizacion (
     id_movimiento INTEGER PRIMARY KEY,
     campo_modificado VARCHAR(150) NOT NULL,
@@ -156,6 +191,9 @@ CREATE TABLE movimiento_actualizacion (
         REFERENCES movimiento(id_movimiento)
         ON DELETE CASCADE
 );
+
+drop table metodo_depreciacion;
+select * from metodo_depreciacion;
 
 CREATE TABLE movimiento_depreciacion (
     id_movimiento INTEGER PRIMARY KEY,
@@ -205,6 +243,7 @@ CREATE TABLE auditoria (
     id_usuario_auditor INTEGER NOT NULL,
     fecha_auditoria TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     observaciones TEXT,
+	estados_activos JSONB,
     CONSTRAINT fk_auditoria_movimiento
         FOREIGN KEY (id_movimiento)
         REFERENCES movimiento(id_movimiento)
@@ -398,3 +437,92 @@ BEGIN
 
 END;
 $func$;
+
+
+
+-- no pasar a partir de aqui esto es para las pruebas
+-- Roles
+INSERT INTO rol (nombre, descripcion) VALUES
+('Admin', 'Administrador del sistema'),
+('Usuario', 'Usuario operativo');
+
+-- Área
+INSERT INTO area (nombre) VALUES
+('TI');
+
+-- Puesto
+INSERT INTO puesto (nombre, id_area) VALUES
+('Desarrollador', 1);
+
+-- Usuario
+INSERT INTO usuario (
+    nombre_usuario, nombre, apellido_paterno, correo,
+    id_rol, id_puesto, password
+) VALUES
+('ricky', 'Ricky', 'Vel', 'ricky@mail.com', 1, 1, '123456');
+
+-- Edificio
+INSERT INTO edificio (nombre, numero_pisos) VALUES
+('Edificio A', 3);
+
+-- Piso
+INSERT INTO piso (numero_piso, id_edificio) VALUES
+(1, 1);
+
+-- Aula
+INSERT INTO aula (numero_aula, id_piso) VALUES
+('A-101', 1);
+
+-- Categoría
+INSERT INTO categoria (nombre, descripcion) VALUES
+('Equipo de Cómputo', 'Computadoras y laptops');
+
+--para depreciacion
+-- Línea Recta
+INSERT INTO activo (
+    nombre, fecha_compra, precio_compra, valor_residual,
+    vida_util_anios, id_metodo_depreciacion,
+    id_categoria, id_estado_activo, id_aula
+) VALUES
+('Laptop HP', '2024-01-01', 10000, 1000, 5, 1, 1, 1, 1);
+
+-- SYD
+INSERT INTO activo (
+    nombre, fecha_compra, precio_compra, valor_residual,
+    vida_util_anios, id_metodo_depreciacion,
+    id_categoria, id_estado_activo, id_aula
+) VALUES
+('Impresora Epson', '2024-01-01', 8000, 500, 4, 2, 1, 1, 1);
+
+-- Saldo decreciente
+INSERT INTO activo (
+    nombre, fecha_compra, precio_compra, valor_residual,
+    vida_util_anios, id_metodo_depreciacion,
+    id_categoria, id_estado_activo, id_aula
+) VALUES
+('Servidor Dell', '2024-01-01', 20000, 2000, 5, 3, 1, 1, 1);
+-- linea recta
+SELECT * FROM calcular_depreciacion(1);
+
+SELECT 
+    a.nombre,
+    d.*
+FROM calcular_depreciacion(1) d
+JOIN activo a 
+    ON a.id_activo = 1;
+-- syd
+SELECT * FROM calcular_depreciacion(2);
+SELECT 
+    a.nombre,
+    d.*
+FROM calcular_depreciacion(2) d
+JOIN activo a 
+    ON a.id_activo = 2;
+--saldo decreciente
+SELECT * FROM calcular_depreciacion(3);
+SELECT 
+    a.nombre,
+    d.*
+FROM calcular_depreciacion(3) d
+JOIN activo a 
+    ON a.id_activo = 3;
