@@ -6,6 +6,7 @@ const assetRouter = require('./routes/assetRoute')
 const rolRouter= require('./routes/rolRoutes');
 const userRouter= require('./routes/userRoute');
 const authRouter= require('./routes/authRoutes');
+const auditoriaRouter = require('./routes/auditoriaRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +17,7 @@ app.use('/api/assets', assetRouter);
 app.use('/api/roles', rolRouter);
 app.use('/api/usuarios', userRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/auditorias', auditoriaRouter);
 
 
 const port= process.env.APP_PORT || 4000;

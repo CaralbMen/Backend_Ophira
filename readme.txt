@@ -42,6 +42,7 @@ ASSETS
     - Eliminar
         delete => localhost:4000/api/assets/[id]
 
+
 USUARIOS
 URL base => localhost:4000/api/usuarios
 
@@ -107,3 +108,28 @@ ROLES
         delete => localhost:4000/api/roles/[nombre]
 
 
+AUDITORIAS
+URL base => localhost:4000/api/auditorias
+
+    - Crear auditoría
+        post => localhost:4000/api/auditorias/
+        body: {
+            "id_movimiento": "1",
+            "id_usuario_auditor": "1",
+            "observaciones": "aughgh"
+        }
+
+    - Obtener todas las auditorías
+        get => localhost:4000/api/auditorias/
+
+    - Obtener auditoría por id
+        get => localhost:4000/api/auditorias/[id]
+
+    - Editar auditoría
+        put => localhost:4000/api/auditorias/[id]
+        body: {
+            "observaciones": "aughg"
+        }
+
+    - Eliminar auditoría
+        delete => localhost:4000/api/auditorias/[id]
