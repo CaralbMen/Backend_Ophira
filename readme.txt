@@ -3,24 +3,48 @@ ENDPOINTS PARA CONSUMIR LA API
 ASSETS
  URL base => localhost:4000/api/assets
  
- - Crear ACTIVO
-    post => localhost:4000/api/assets/
-    body:{
-      "nombre": "nombre",
-      "descripcion" : "descripcion",
-      "modelo": "modelo",
-      "numero_serie": "numero_serie",
-      "fecha_compra" : "fecha_compra",
-      "precio_compra" : 10.00,
-      "id_categoria" : "1",
-      "id_estado_activo": "1",
-      "id_aula": "C102"  
-    }
+    - Crear ACTIVO
+        post => localhost:4000/api/assets/
+        body:{
+        "nombre": "nombre",
+        "descripcion" : "descripcion",
+        "modelo": "modelo",
+        "numero_serie": "numero_serie",
+        "fecha_compra" : "fecha_compra",
+        "precio_compra" : 10.00,
+        "id_categoria" : "1",
+        "id_estado_activo": "1",
+        "id_aula": "C102"  
+        }
 
-- Listar todos los activos
-    get => localhost:4000/api/assets/
+    - Listar todos los activos
+        get => localhost:4000/api/assets/
+
+    - Buscar por id y nombre
+        get => localhost:400/api/assets/id/[id]
+        get => localhost:400/api/assets/nombre/[nombre]
+
+    - Editar
+        (el id viene en el body)
+        put => localhost:4000/api/assets/
+        body: {
+        "nombre": "nombre",
+        "descripcion" : "descripcion",
+        "modelo": "modelo",
+        "numero_serie": "numero_serie",
+        "fecha_compra" : "fecha_compra",
+        "precio_compra" : 10.00,
+        "id_categoria" : "1",
+        "id_estado_activo": "1",
+        "id_aula": "C102"  
+        }
+
+    - Eliminar
+        delete => localhost:4000/api/assets/[id]
 
 USUARIOS
+URL base => localhost:4000/api/usuarios
+
     - Crear
         post => localhost:4000/api/usuarios
         body: {

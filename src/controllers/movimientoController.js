@@ -1,4 +1,4 @@
-const Pool = require('../config/db')
+const pool = require('../config/db')
 
 const VerMovimiento = async (req,res)=>{
     
