@@ -20,29 +20,28 @@ ASSETS
     - Listar todos los activos
         get => localhost:4000/api/assets/
 
-    - Buscar por id y nombre
-        get => localhost:400/api/assets/id/[id]
-        get => localhost:400/api/assets/nombre/[nombre]
-
-    - Editar
-        (el id viene en el body)
-        put => localhost:4000/api/assets/
-        body: {
-        "nombre": "nombre",
-        "descripcion" : "descripcion",
-        "modelo": "modelo",
-        "numero_serie": "numero_serie",
-        "fecha_compra" : "fecha_compra",
-        "precio_compra" : 10.00,
-        "id_categoria" : "1",
-        "id_estado_activo": "1",
-        "id_aula": "C102"  
-        }
-
+    - Buscar un activo por id
+        get => localhost:4000/api/assets/id/[id]
+    
+    - Buscar por nombre
+        get => localhost:4000/api/assets/nombre/[nombre]
+    
     - Eliminar
         delete => localhost:4000/api/assets/[id]
-
-
+    
+    - Editar    
+        put => localhost:4000/api/assets/[id]
+        body:{
+            "nombre": "nombre",
+            "descripcion": "descripcion",
+            "modelo": "modelo",
+            "numero_serie": "numero_serie",
+            "fecha_compra":"fecha_compra",
+            "precio_compra": "precio_compra",
+            "id_categoria": "id_categoria",
+            "id_estado_activo":"id_estado_activo",
+            "id_aula":"id_aula"
+        }
 USUARIOS
 URL base => localhost:4000/api/usuarios
 

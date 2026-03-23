@@ -109,8 +109,8 @@ const dropActivo = async(req, res) => {
 
 
 const editarActivo = async(req, res) => {
-    const {id_activo, nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula} = req.body
-
+    const {nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula} = req.body
+    const id_activo = req.params.id
 
     try {
         const { rows } = await pool.query('SELECT * FROM activo WHERE id_activo = $1', [id_activo])
