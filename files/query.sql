@@ -100,10 +100,14 @@ select * from aula;
 
 CREATE TABLE estado_activo (
     id_estado_activo SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL UNIQUE
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    color varchar(10)
 );
+
 insert into estado_activo (nombre) values
-()
+('Activo', 'green'),
+('Mantenimiento', 'yellow'),
+('Retirado', 'red');
 select * from estado_activo;
 
 
