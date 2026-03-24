@@ -11,15 +11,15 @@ const getEdificios= async(req, res)=>{
     }
 }
 const crearEdificio= async(req, res)=>{
-    const {id, nombre, cantidad_pisos, direccion}= req. body;
-    if(!id) return res.status(400).json({message: 'El id es requerido'});
+    const {clave, nombre, cantidad_pisos, direccion}= req. body;
+    if(!clave) return res.status(400).json({message: 'La clave es requerida'});
     if(!nombre) return res.status(400).json({message: 'El nombre es requerido'});
     if(!cantidad_pisos) return res.status(400).json({message: 'La cantidad de pisos es requerida'});
     if(!direccion) return res.status(400).json({message: 'La direccion es requerida'});
-    
+    console
     try{
         await pool.query('INSERT INTO edificio (id_edificio, nombre, cantidad_pisos, direccion) VALUES ($1, $2, $3, $4)', 
-            [id, nombre, cantidad_pisos, direccion]);
+            [clave, nombre, cantidad_pisos, direccion]);
         res.status(201).json({message: 'Edificio creado correctamente'});
     } catch (error) {
         console.error('Error al crear el edificio:', error);
@@ -91,7 +91,7 @@ const crearAula= async(req, res)=>{
     const id= `${id_piso}${numero_aula}`;
     try{
         await pool.query('INSERT INTO aula (id_aula, id_piso, numero_aula, tipo) VALUES ($1, $2, $3, $4)', 
-            [id, id_piso, numero_aula<10? `0${numero_aula}`: numero_aula, tipo]);
+            [id, id_piso,numero_aula, tipo]);
         res.status(201).json({message: 'Aula creada correctamente'});
     } catch (error) {
         console.error('Error al crear la aula:', error);
