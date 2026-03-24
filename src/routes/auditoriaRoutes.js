@@ -12,3 +12,5 @@ router.get('/:id', auditoriaController.buscarAuditoriaId)
 // EDITAR Y ELIMINAR
 router.delete('/:id', auditoriaController.dropAuditoria)
 router.put('/:id', auditoriaController.editarAuditoria)
+
+module.exports = router
