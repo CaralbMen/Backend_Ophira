@@ -86,7 +86,7 @@ CREATE TABLE aula (
     id_aula varchar(10) PRIMARY KEY,
 	id_piso varchar(10) NOT NULL,
     numero_aula VARCHAR(50) NOT NULL,
-    tipo varchar(30) not null default 'Aula',
+    
     CONSTRAINT fk_aula_piso
         FOREIGN KEY (id_piso)
         REFERENCES piso(id_piso)
@@ -94,7 +94,7 @@ CREATE TABLE aula (
 	constraint u_aula unique(id_piso, numero_aula)
 );
 insert into aula values
-('A105', 'A1', 5, 'Aula');
+('A105', 'A1', 5);
 select * from aula;
 
 
@@ -131,6 +131,7 @@ CREATE TABLE activo (
     modelo VARCHAR(150),
     numero_serie VARCHAR(150) UNIQUE,
     fecha_compra DATE NOT NULL,
+    fecha_inicio_depreciacion DATE NULL,
     precio_compra NUMERIC(12,2) NOT NULL CHECK (precio_compra >= 0),
     valor_residual NUMERIC(12,2) DEFAULT 0 CHECK (valor_residual >= 0),
     vida_util_anios INTEGER CHECK (vida_util_anios > 0),
@@ -277,15 +278,17 @@ INSERT INTO estado_activo (nombre) VALUES
 
 -- aqui inicia el chorizote de la función 
 
-CREATE OR REPLACE FUNCTION calcular_depreciacion(
+CREATE OR REPLACE FUNCTION calcular_depreciacion_hasta_fecha(
     p_activo_id INT,
+    p_fecha_corte DATE DEFAULT CURRENT_DATE,
     p_metodo_id INT DEFAULT NULL
 )
 RETURNS TABLE(
-    anio INT, 
-    importe_depreciacion NUMERIC, 
+    depreciacion_acumulada NUMERIC,
     valor_en_libros NUMERIC,
-    depreciacion_acumulada NUMERIC
+    dias_depreciados INTEGER,
+    anios_completos INTEGER,
+    fraccion_anio NUMERIC
 )
 LANGUAGE plpgsql
 AS $func$
@@ -293,15 +296,24 @@ DECLARE
     v_costo NUMERIC;
     v_residual NUMERIC;
     v_vida INT;
+    v_fecha_inicio DATE;
     v_metodo_id INT;
     v_parametros JSONB;
     v_tasa NUMERIC;
     v_suma_digitos INT;
     v_depreciable NUMERIC;
-    v_activo_existe BOOLEAN;
+    v_depreciacion_anual NUMERIC;
+    v_depreciacion_acumulada NUMERIC := 0;
+    v_valor_libros NUMERIC;
+    v_anio_actual INT;
+    v_dias_totales INT;
+    v_dias_anio_completo INT := 365;
+    v_anios_completos INT;
+    v_dias_restantes INT;
+    v_fraccion_anio NUMERIC;
     v_nombre_activo VARCHAR(200);
+    v_activo_existe BOOLEAN;
 BEGIN
-    -- Validar existencia del activo
     SELECT EXISTS(
         SELECT 1 FROM activo WHERE id_activo = p_activo_id
     ) INTO v_activo_existe;
@@ -310,23 +322,27 @@ BEGIN
         RAISE EXCEPTION 'El activo con ID % no existe', p_activo_id;
     END IF;
 
-    -- Obtener datos del activo
+    IF p_fecha_corte > CURRENT_DATE THEN
+        RAISE EXCEPTION 'La fecha de corte no puede ser futura';
+    END IF;
+
     SELECT 
         a.precio_compra, 
         COALESCE(a.valor_residual, 0), 
         a.vida_util_anios,
         a.nombre,
-        COALESCE(p_metodo_id, a.id_metodo_depreciacion)
+        COALESCE(p_metodo_id, a.id_metodo_depreciacion),
+        a.fecha_inicio_depreciacion
     INTO 
         v_costo, 
         v_residual, 
         v_vida, 
         v_nombre_activo,
-        v_metodo_id
+        v_metodo_id,
+        v_fecha_inicio
     FROM activo a
     WHERE a.id_activo = p_activo_id;
 
-    -- Validaciones
     IF v_vida IS NULL OR v_vida <= 0 THEN
         RAISE EXCEPTION 'El activo "%" no tiene vida útil válida', v_nombre_activo;
     END IF;
@@ -335,7 +351,21 @@ BEGIN
         RAISE EXCEPTION 'El valor residual no puede ser mayor al costo';
     END IF;
 
-    -- Obtener parámetros
+    IF v_fecha_inicio IS NULL THEN
+        RAISE EXCEPTION 'El activo "%" no tiene fecha_inicio_depreciacion', v_nombre_activo;
+    END IF;
+
+    IF v_fecha_inicio > p_fecha_corte THEN
+        RETURN QUERY
+        SELECT 
+            0::NUMERIC,
+            v_costo::NUMERIC,
+            0::INTEGER,
+            0::INTEGER,
+            0::NUMERIC;
+        RETURN;
+    END IF;
+
     SELECT parametros
     INTO v_parametros
     FROM metodo_depreciacion
@@ -346,99 +376,227 @@ BEGIN
     END IF;
 
     v_depreciable := v_costo - v_residual;
+    v_dias_totales := (p_fecha_corte - v_fecha_inicio);
+    v_anios_completos := FLOOR(v_dias_totales / v_dias_anio_completo);
+    v_dias_restantes := v_dias_totales - (v_anios_completos * v_dias_anio_completo);
+    v_fraccion_anio := v_dias_restantes::NUMERIC / v_dias_anio_completo::NUMERIC;
 
-    -- Caso sin depreciación
     IF v_depreciable = 0 THEN
         RETURN QUERY
         SELECT 
-            g.anio,
-            0,
-            v_costo,
-            0
-        FROM generate_series(1, v_vida) g(anio);
+            0::NUMERIC,
+            v_costo::NUMERIC,
+            v_dias_totales::INTEGER,
+            v_anios_completos::INTEGER,
+            v_fraccion_anio::NUMERIC;
         RETURN;
     END IF;
 
-    -- Métodos
     CASE v_parametros->>'tipo'
--- LÍNEA RECTA
-        
         WHEN 'linea_recta' THEN
-            RETURN QUERY
-            SELECT 
-                g.anio,
-                ROUND(v_depreciable / v_vida, 2),
-                ROUND(v_costo - (g.anio * (v_depreciable / v_vida)), 2),
-                ROUND(g.anio * (v_depreciable / v_vida), 2)
-            FROM generate_series(1, v_vida) g(anio);
-
-
--- SYD
+            v_depreciacion_anual := v_depreciable / v_vida;
+            
+            IF v_anios_completos >= v_vida THEN
+                v_depreciacion_acumulada := v_depreciable;
+            ELSE
+                v_depreciacion_acumulada := v_anios_completos * v_depreciacion_anual;
+                v_depreciacion_acumulada := v_depreciacion_acumulada + (v_depreciacion_anual * v_fraccion_anio);
+                IF v_depreciacion_acumulada > v_depreciable THEN
+                    v_depreciacion_acumulada := v_depreciable;
+                END IF;
+            END IF;
 
         WHEN 'syd' THEN
             v_suma_digitos := v_vida * (v_vida + 1) / 2;
-
-            RETURN QUERY
-            SELECT 
-                g.anio,
-                ROUND((v_vida - g.anio + 1)::NUMERIC / v_suma_digitos * v_depreciable, 2),
-                ROUND(
-                    v_costo - SUM((v_vida - g.anio + 1)::NUMERIC / v_suma_digitos * v_depreciable)
-                    OVER (ORDER BY g.anio), 2
-                ),
-                ROUND(
-                    SUM((v_vida - g.anio + 1)::NUMERIC / v_suma_digitos * v_depreciable)
-                    OVER (ORDER BY g.anio), 2
-                )
-            FROM generate_series(1, v_vida) g(anio);
-
+            
+            FOR v_anio_actual IN 1..LEAST(v_anios_completos, v_vida) LOOP
+                v_depreciacion_acumulada := v_depreciacion_acumulada + 
+                    ((v_vida - v_anio_actual + 1)::NUMERIC / v_suma_digitos * v_depreciable);
+            END LOOP;
+            
+            IF v_anios_completos < v_vida THEN
+                v_depreciacion_acumulada := v_depreciacion_acumulada + 
+                    (((v_vida - v_anios_completos)::NUMERIC / v_suma_digitos * v_depreciable) * v_fraccion_anio);
+            END IF;
+            
+            IF v_depreciacion_acumulada > v_depreciable THEN
+                v_depreciacion_acumulada := v_depreciable;
+            END IF;
 
         WHEN 'saldo_decreciente' THEN
-            v_tasa := COALESCE((v_parametros->>'tasa')::NUMERIC, 0);
-
+            v_tasa := COALESCE((v_parametros->>'tasa')::NUMERIC, 0.40);
+            
             IF v_tasa <= 0 OR v_tasa > 1 THEN
                 RAISE EXCEPTION 'Tasa inválida';
             END IF;
-
-            RETURN QUERY
-            WITH RECURSIVE rec(
-                anio, 
-                importe_depreciacion, 
-                valor_en_libros, 
-                depreciacion_acumulada
-            ) AS (
-                
-                -- Año 1
-                SELECT 
-                    1,
-                    ROUND(LEAST(v_costo * v_tasa, v_costo - v_residual), 2),
-                    ROUND(v_costo - LEAST(v_costo * v_tasa, v_costo - v_residual), 2),
-                    ROUND(LEAST(v_costo * v_tasa, v_costo - v_residual), 2)
-
-                UNION ALL
-
-                -- Siguientes años
-                SELECT 
-                    r.anio + 1,
-                    ROUND(
-                        LEAST(r.valor_en_libros * v_tasa, r.valor_en_libros - v_residual), 2
-                    ),
-                    ROUND(
-                        r.valor_en_libros - LEAST(r.valor_en_libros * v_tasa, r.valor_en_libros - v_residual), 2
-                    ),
-                    ROUND(
-                        r.depreciacion_acumulada + LEAST(r.valor_en_libros * v_tasa, r.valor_en_libros - v_residual), 2
-                    )
-                FROM rec r
-                WHERE r.anio < v_vida
-                  AND r.valor_en_libros > v_residual
-            )
-            SELECT * FROM rec;
+            
+            v_valor_libros := v_costo;
+            
+            FOR v_anio_actual IN 1..v_anios_completos LOOP
+                v_depreciacion_acumulada := v_depreciacion_acumulada + (v_valor_libros * v_tasa);
+                v_valor_libros := v_valor_libros - (v_valor_libros * v_tasa);
+                EXIT WHEN v_anio_actual >= v_vida;
+            END LOOP;
+            
+            IF v_anios_completos < v_vida THEN
+                v_depreciacion_acumulada := v_depreciacion_acumulada + 
+                    ((v_valor_libros * v_tasa) * v_fraccion_anio);
+            END IF;
+            
+            IF v_depreciacion_acumulada > v_depreciable THEN
+                v_depreciacion_acumulada := v_depreciable;
+            END IF;
 
         ELSE
-            RAISE EXCEPTION 'Método no soportado: %', v_parametros->>'tipo';
+            RAISE EXCEPTION 'Método no soportado';
     END CASE;
 
+    v_valor_libros := v_costo - v_depreciacion_acumulada;
+    
+    IF v_valor_libros < v_residual THEN
+        v_valor_libros := v_residual;
+        v_depreciacion_acumulada := v_costo - v_residual;
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        ROUND(v_depreciacion_acumulada, 2),
+        ROUND(v_valor_libros, 2),
+        v_dias_totales::INTEGER,
+        v_anios_completos::INTEGER,
+        ROUND(v_fraccion_anio, 4);
+END;
+$func$;
+
+CREATE OR REPLACE FUNCTION obtener_plan_depreciacion(
+    p_activo_id INT,
+    p_metodo_id INT DEFAULT NULL
+)
+RETURNS TABLE(
+    anio_numero INT,
+    fecha_inicio_anio DATE,
+    fecha_fin_anio DATE,
+    importe_depreciacion NUMERIC,
+    valor_en_libros NUMERIC,
+    depreciacion_acumulada NUMERIC
+)
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+    v_fecha_inicio DATE;
+    v_costo NUMERIC;
+    v_residual NUMERIC;
+    v_vida INT;
+    v_anio INT;
+    v_depreciacion_anual NUMERIC;
+    v_depreciable NUMERIC;
+    v_metodo_id INT;
+    v_parametros JSONB;
+    v_tasa NUMERIC;
+    v_suma_digitos INT;
+    v_valor_libros_anterior NUMERIC;
+    v_depreciacion_acum NUMERIC := 0;
+BEGIN
+    SELECT 
+        a.fecha_inicio_depreciacion,
+        a.precio_compra,
+        COALESCE(a.valor_residual, 0),
+        a.vida_util_anios,
+        COALESCE(p_metodo_id, a.id_metodo_depreciacion)
+    INTO 
+        v_fecha_inicio,
+        v_costo,
+        v_residual,
+        v_vida,
+        v_metodo_id
+    FROM activo a
+    WHERE a.id_activo = p_activo_id;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Activo no encontrado';
+    END IF;
+    
+    IF v_fecha_inicio IS NULL THEN
+        RAISE EXCEPTION 'El activo no tiene fecha_inicio_depreciacion';
+    END IF;
+    
+    v_depreciable := v_costo - v_residual;
+    
+    SELECT parametros INTO v_parametros
+    FROM metodo_depreciacion
+    WHERE id_metodo_depreciacion = v_metodo_id;
+    
+    IF v_depreciable = 0 THEN
+        FOR v_anio IN 1..v_vida LOOP
+            RETURN QUERY
+            SELECT 
+                v_anio,
+                (v_fecha_inicio + ((v_anio-1) || ' years')::INTERVAL)::DATE,
+                (v_fecha_inicio + (v_anio || ' years')::INTERVAL - INTERVAL '1 day')::DATE,
+                0::NUMERIC,
+                v_costo::NUMERIC,
+                0::NUMERIC;
+        END LOOP;
+        RETURN;
+    END IF;
+    
+    CASE v_parametros->>'tipo'
+        WHEN 'linea_recta' THEN
+            v_depreciacion_anual := v_depreciable / v_vida;
+            
+            FOR v_anio IN 1..v_vida LOOP
+                v_depreciacion_acum := v_depreciacion_acum + v_depreciacion_anual;
+                
+                RETURN QUERY
+                SELECT 
+                    v_anio,
+                    (v_fecha_inicio + ((v_anio-1) || ' years')::INTERVAL)::DATE,
+                    (v_fecha_inicio + (v_anio || ' years')::INTERVAL - INTERVAL '1 day')::DATE,
+                    ROUND(v_depreciacion_anual, 2),
+                    ROUND(v_costo - v_depreciacion_acum, 2),
+                    ROUND(v_depreciacion_acum, 2);
+            END LOOP;
+            
+        WHEN 'syd' THEN
+            v_suma_digitos := v_vida * (v_vida + 1) / 2;
+            
+            FOR v_anio IN 1..v_vida LOOP
+                v_depreciacion_anual := ((v_vida - v_anio + 1)::NUMERIC / v_suma_digitos * v_depreciable);
+                v_depreciacion_acum := v_depreciacion_acum + v_depreciacion_anual;
+                
+                RETURN QUERY
+                SELECT 
+                    v_anio,
+                    (v_fecha_inicio + ((v_anio-1) || ' years')::INTERVAL)::DATE,
+                    (v_fecha_inicio + (v_anio || ' years')::INTERVAL - INTERVAL '1 day')::DATE,
+                    ROUND(v_depreciacion_anual, 2),
+                    ROUND(v_costo - v_depreciacion_acum, 2),
+                    ROUND(v_depreciacion_acum, 2);
+            END LOOP;
+            
+        WHEN 'saldo_decreciente' THEN
+            v_tasa := COALESCE((v_parametros->>'tasa')::NUMERIC, 0.40);
+            v_valor_libros_anterior := v_costo;
+            
+            FOR v_anio IN 1..v_vida LOOP
+                v_depreciacion_anual := v_valor_libros_anterior * v_tasa;
+                v_valor_libros_anterior := v_valor_libros_anterior - v_depreciacion_anual;
+                v_depreciacion_acum := v_depreciacion_acum + v_depreciacion_anual;
+                
+                IF v_valor_libros_anterior < v_residual THEN
+                    v_valor_libros_anterior := v_residual;
+                END IF;
+                
+                RETURN QUERY
+                SELECT 
+                    v_anio,
+                    (v_fecha_inicio + ((v_anio-1) || ' years')::INTERVAL)::DATE,
+                    (v_fecha_inicio + (v_anio || ' years')::INTERVAL - INTERVAL '1 day')::DATE,
+                    ROUND(v_depreciacion_anual, 2),
+                    ROUND(v_valor_libros_anterior, 2),
+                    ROUND(v_depreciacion_acum, 2);
+            END LOOP;
+    END CASE;
 END;
 $func$;
 
