@@ -99,5 +99,66 @@ const crearAula= async(req, res)=>{
     }
 }
 
+const editarAula = async (req, res) => {
+    const { id_aula } = req.params;
+    const { id_piso, numero_aula, tipo } = req.body;
 
-module.exports= { getEdificios, crearEdificio, getPisos, getPisosEdificio, crearPiso, getAulas, getAulasPiso, crearAula}
+    try {
+        const existente = await pool.query('SELECT * FROM aula WHERE id_aula = $1', [id_aula.toUpperCase()]);
+        if (existente.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro la aula ${id_aula}` });
+        }
+
+        const actual = existente.rows[0];
+
+        const result = await pool.query(
+            `UPDATE aula
+             SET id_piso = $2,
+                 numero_aula = $3,
+                 tipo = $4
+             WHERE id_aula = $1
+             RETURNING *`,
+            [
+                id_aula.toUpperCase(),
+                id_piso || actual.id_piso,
+                numero_aula || actual.numero_aula,
+                tipo || actual.tipo
+            ]
+        );
+
+        res.status(200).json({ message: 'Aula actualizada correctamente', aula: result.rows[0] });
+    } catch (error) {
+        console.error('Error al editar la aula:', error);
+        res.status(500).json({ message: 'Error al editar la aula' });
+    }
+};
+
+const eliminarAula = async (req, res) => {
+    const { id_aula } = req.params;
+
+    try {
+        const result = await pool.query('DELETE FROM aula WHERE id_aula = $1 RETURNING *', [id_aula.toUpperCase()]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro la aula ${id_aula}` });
+        }
+
+        res.status(200).json({ message: 'Aula eliminada correctamente', aula: result.rows[0] });
+    } catch (error) {
+        console.error('Error al eliminar la aula:', error);
+        res.status(500).json({ message: 'Error al eliminar la aula' });
+    }
+};
+
+
+module.exports= {
+    getEdificios,
+    crearEdificio,
+    getPisos,
+    getPisosEdificio,
+    crearPiso,
+    getAulas,
+    getAulasPiso,
+    crearAula,
+    editarAula,
+    eliminarAula
+}

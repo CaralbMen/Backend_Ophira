@@ -86,7 +86,7 @@ CREATE TABLE aula (
     id_aula varchar(10) PRIMARY KEY,
 	id_piso varchar(10) NOT NULL,
     numero_aula VARCHAR(50) NOT NULL,
-    
+    tipo varchar(30) not null default 'Aula',
     CONSTRAINT fk_aula_piso
         FOREIGN KEY (id_piso)
         REFERENCES piso(id_piso)
@@ -94,7 +94,7 @@ CREATE TABLE aula (
 	constraint u_aula unique(id_piso, numero_aula)
 );
 insert into aula values
-('A105', 'A1', 5);
+('A105', 'A1', 5, 'Aula');
 select * from aula;
 
 

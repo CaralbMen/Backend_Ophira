@@ -9,17 +9,20 @@ const crearActivo = async (req, res) => {
         if (!datos.numero_serie) { return res.status(400).json({msg: "El número de serie no puede estar vacío"}) }
         if (!datos.fecha_compra) { return res.status(400).json({msg: "La fecha de compra no puede estar vacía"}) }
         if (!datos.precio_compra) { return res.status(400).json({msg: "El precio de compra no puede estar vacío"}) }
+        if(!datos.valor_residual) { return res.status(400).json({msg: "El valor residual no puede estar vacío"}) }
+        if(!datos.vida_util_anios) { return res.status(400).json({msg: "La vida útil no puede estar vacía"}) }    
+        if(!datos.id_metodo_depreciacion) { return res.status(400).json({msg: "El método de depreciación no puede estar vacío"}) }
         if (!datos.id_categoria) { return res.status(400).json({msg: "La categoría no puede estar vacía"}) }
         if (!datos.id_estado_activo) { return res.status(400).json({msg: "El estado no puede estar vacío"}) }
         if (!datos.id_aula) { return res.status(400).json({msg: "La aula no puede estar vacía"}) }
 
         const {rows} = await pool.query(`INSERT INTO activo 
-            (nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula)
+            (nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, valor_residual, vida_util_anios, id_metodo_depreciacion, id_categoria, id_estado_activo, id_aula)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *
             `, 
         [datos.nombre, datos.descripcion, datos.modelo, datos.numero_serie, datos.fecha_compra, 
-        datos.precio_compra, datos.id_categoria, datos.id_estado_activo, datos.id_aula])
+        datos.precio_compra, datos.valor_residual, datos.vida_util_anios, datos.id_metodo_depreciacion, datos.id_categoria, datos.id_estado_activo, datos.id_aula])
         
         res.status(200).json({msg: "Datos insertados exitosamente", datos: rows, codigo: 200})
 

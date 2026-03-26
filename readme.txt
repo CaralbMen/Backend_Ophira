@@ -6,15 +6,18 @@ ASSETS
     - Crear ACTIVO
         post => localhost:4000/api/assets/
         body:{
-        "nombre": "nombre",
-        "descripcion" : "descripcion",
-        "modelo": "modelo",
-        "numero_serie": "numero_serie",
-        "fecha_compra" : "fecha_compra",
-        "precio_compra" : 10.00,
-        "id_categoria" : "1",
-        "id_estado_activo": "1",
-        "id_aula": "C102"  
+            "nombre": "prueba1", 
+            "descripcion":"Prueba1",
+            "modelo": "Prueba1",
+            "numero_serie": "12345",
+            "fecha_compra": "2026-03-11",
+            "precio_compra": 10.3,
+            "valor_residual": 1,
+            "vida_util_anios": 9,
+            "id_metodo_depreciacion": 1,
+            "id_categoria": "1",
+            "id_estado_activo": "1",
+            "id_aula": "A208"
         }
 
     - Listar todos los activos
@@ -132,3 +135,112 @@ URL base => localhost:4000/api/auditorias
 
     - Eliminar auditoría
         delete => localhost:4000/api/auditorias/[id]
+
+
+UBICACION - AULAS
+URL base => localhost:4000/api/ubicacion
+
+    - Obtener todas las aulas
+        get => localhost:4000/api/ubicacion/aula
+
+    - Obtener aulas por piso
+        get => localhost:4000/api/ubicacion/aula/[id_piso]
+
+    - Crear aula
+        post => localhost:4000/api/ubicacion/aula
+        body: {
+            "id_piso": "A2",
+            "numero_aula": "08",
+            "tipo": "Aula"
+        }
+
+    - Editar aula
+        put => localhost:4000/api/ubicacion/aula/[id_aula]
+        body: {
+            "id_piso": "A2",
+            "numero_aula": "08",
+            "tipo": "Laboratorio"
+        }
+
+    - Eliminar aula
+        delete => localhost:4000/api/ubicacion/aula/[id_aula]
+
+
+CATEGORIAS
+URL base => localhost:4000/api/categorias
+
+    - Obtener todas las categorias
+        get => localhost:4000/api/categorias
+
+    - Crear categoria
+        post => localhost:4000/api/categorias
+        body: {
+            "nombre": "Computo",
+            "descripcion": "Equipo de computo"
+        }
+
+    - Editar categoria
+        put => localhost:4000/api/categorias/[id]
+        body: {
+            "nombre": "Computo",
+            "descripcion": "Descripcion actualizada"
+        }
+
+    - Eliminar categoria
+        delete => localhost:4000/api/categorias/[id]
+
+
+METODOS DE DEPRECIACION
+URL base => localhost:4000/api/metodos-depreciacion
+
+    - Obtener todos los metodos
+        get => localhost:4000/api/metodos-depreciacion
+
+    - Crear metodo
+        post => localhost:4000/api/metodos-depreciacion
+        body: {
+            "nombre": "Linea Recta",
+            "descripcion": "Depreciacion uniforme",
+            "parametros": {
+                "tipo": "linea_recta",
+                "formula": "(costo - valor_residual) / vida_util"
+            }
+        }
+
+    - Editar metodo
+        put => localhost:4000/api/metodos-depreciacion/[id]
+        body: {
+            "nombre": "Saldo Decreciente",
+            "descripcion": "Depreciacion acelerada",
+            "parametros": {
+                "tipo": "saldo_decreciente",
+                "tasa": 0.4
+            }
+        }
+
+    - Eliminar metodo
+        delete => localhost:4000/api/metodos-depreciacion/[id]
+
+
+ESTADOS DE ACTIVO
+URL base => localhost:4000/api/estados-activo
+
+    - Obtener todos los estados
+        get => localhost:4000/api/estados-activo
+
+    - Crear estado
+        post => localhost:4000/api/estados-activo
+        body: {
+            "nombre": "Mantenimiento",
+            "color": "yellow"
+        }
+
+    - Editar estado
+        put => localhost:4000/api/estados-activo/[id]
+        body: {
+            "nombre": "Retirado",
+            "color": "red"
+        }
+
+    - Eliminar estado
+        delete => localhost:4000/api/estados-activo/[id]
