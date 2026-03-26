@@ -7,7 +7,8 @@ const obtenerRoles= async(req, res)=>{
             res.status(404).json({mensaje: 'No hay roles guardados', codigo: 404});
         }
         console.log(result);
-        res.status(200).json({mensaje: 'Roles obtenidos', codigo: 200, data: result});
+        
+        res.status(200).json(result.rows);
     }catch(e){
         console.log('error: '+e);
         res.status(500).json({mensaje:'Error en el servidor', error: e});

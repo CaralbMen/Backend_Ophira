@@ -2,8 +2,8 @@ const pool = require('../config/db');
 
 const getAreas= async(req, res)=>{
     try{
-        const response= await pool.query('SELECT * FROM area');
-        res.status(200).json(response.rows);
+        const result= await pool.query('SELECT * FROM area');
+        res.status(200).json(result.rows);
     }catch (error) {
         console.error('Error al obtener las áreas:', error);
         res.status(500).json({message: 'Error al obtener las áreas'});
