@@ -6,19 +6,20 @@ ASSETS
     - Crear ACTIVO
         post => localhost:4000/api/assets/
         body:{
-            "nombre": "prueba Postman", 
-            "descripcion":"Prueba2",
-            "modelo": "Prueba2",
+            "nombre": "prueba Postman",
+            "descripcion": "Prueba1",
+            "modelo": "Prueba1",
             "numero_serie": "12345",
             "fecha_compra": "2026-03-11",
-            "precio_compra": 200,
-            "valor_actual": 20,
-            "valor_residual": 1,
+            "precio_compra":100,
+            "valor_actual": 100,
+            "valor_residual": 10,
             "vida_util_anios": 9,
-            "id_metodo_depreciacion": 1,
+            "id_metodo_depreciacion": "1",
             "id_categoria": "1",
             "id_estado_activo": "1",
-            "id_aula": "A208"
+            "id_aula": "A208",
+            "id_responsable": "1" 
         }
 
     - Listar todos los activos
@@ -36,15 +37,20 @@ ASSETS
     - Editar    
         put => localhost:4000/api/assets/[id]
         body:{
-            "nombre": "nombre",
-            "descripcion": "descripcion",
-            "modelo": "modelo",
-            "numero_serie": "numero_serie",
-            "fecha_compra":"fecha_compra",
-            "precio_compra": "precio_compra",
-            "id_categoria": "id_categoria",
-            "id_estado_activo":"id_estado_activo",
-            "id_aula":"id_aula"
+            "nombre": "prueba Postman",
+            "descripcion": "Prueba1",
+            "modelo": "Prueba1",
+            "numero_serie": "12345",
+            "fecha_compra": "2026-03-11",
+            "precio_compra":100,
+            "valor_actual": 100,
+            "valor_residual": 10,
+            "vida_util_anios": 9,
+            "id_metodo_depreciacion": "1",
+            "id_categoria": "1",
+            "id_estado_activo": "1",
+            "id_aula": "A208",
+            "id_responsable": "1" 
         }
 USUARIOS
 URL base => localhost:4000/api/usuarios

@@ -49,7 +49,7 @@ const crearUsuario= async(req, res)=>{
 }
 const obtenerUsuarios= async(req, res)=>{
     try{
-        const result= await pool.query('SELECT * FROM usuario');
+        const result= await pool.query('select u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, r.nombre as rol, p.nombre as puesto, a.nombre as area, u.activo, u.fecha_registro from usuario u join rol r on u.id_rol= r.id_rol join puesto p on u.id_puesto= p.id_puesto join area a on p.id_area= a.id_area');
         if(result.rowCount===0){
             res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }

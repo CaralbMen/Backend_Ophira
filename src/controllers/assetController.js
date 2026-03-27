@@ -18,15 +18,23 @@ const crearActivo = async (req, res) => {
         if (!datos.id_categoria) { return res.status(400).json({msg: "La categoría no puede estar vacía"}) }
         if (!datos.id_estado_activo) { return res.status(400).json({msg: "El estado no puede estar vacío"}) }
         if (!datos.id_aula) { return res.status(400).json({msg: "La aula no puede estar vacía"}) }
-
+        if(!datos.id_responsable) { return res.status(400).json({msg: "El responsable no puede estar vacío"}) }
+        
         const {rows} = await pool.query(`INSERT INTO activo 
-            (nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, valor_actual, valor_residual, vida_util_anios, id_metodo_depreciacion, id_categoria, id_estado_activo, id_aula)
+            (nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, valor_actual, valor_residual, vida_util_anios, id_metodo_depreciacion, id_categoria, id_estado_activo, id_aula, id_responsable)
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *
             `, 
         [datos.nombre, datos.descripcion, datos.modelo, datos.numero_serie, datos.fecha_compra, 
-        datos.precio_compra, datos.valor_actual, datos.valor_residual, datos.vida_util_anios, datos.id_metodo_depreciacion, datos.id_categoria, datos.id_estado_activo, datos.id_aula])
+        datos.precio_compra, datos.valor_actual, datos.valor_residual, datos.vida_util_anios, datos.id_metodo_depreciacion, datos.id_categoria, datos.id_estado_activo, datos.id_aula, datos.id_responsable])
         
+        if(datos.partes){
+            let parteCount = 1;
+            for (const parte of datos.partes){
+                await pool.query(`INSERT INTO partes_de_activo (id_activo, numero_parte, id_aula, descripcion) VALUES ($1, $2, $3, $4)`, [rows[0].id_activo, parteCount, parte.id_aula, parte.descripcion])
+                parteCount++;
+            }
+        }
         res.status(200).json({msg: "Datos insertados exitosamente", datos: rows, codigo: 200})
 
 
@@ -165,7 +173,7 @@ const editarActivo = async(req, res) => {
 
 const getActivosFront= async(req, res)=>{
     try{
-        const response= await pool.query('select a.id_activo, a.nombre, c.nombre as categoria, aula.id_aula as aula, aula.tipo as tipo_aula, e.nombre as estado, e.color from activo a JOIN categoria c ON a.id_categoria = c.id_categoria JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo JOIN aula aula ON a.id_aula = aula.id_aula');
+        const response= await pool.query('select a.id_activo, a.nombre, u.nombre_usuario as responsable, c.nombre as categoria, aula.id_aula as aula, aula.tipo as tipo_aula, e.nombre as estado, e.color, a.fecha_registro from activo a JOIN categoria c ON a.id_categoria = c.id_categoria JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo JOIN aula aula ON a.id_aula = aula.id_aula JOIN usuario u ON a.id_responsable = u.id_usuario');
         if(response.rows===0){
             res.status(404).json({mensaje: 'No hay activos registrados'});
         }
