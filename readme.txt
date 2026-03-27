@@ -6,12 +6,13 @@ ASSETS
     - Crear ACTIVO
         post => localhost:4000/api/assets/
         body:{
-            "nombre": "prueba1", 
-            "descripcion":"Prueba1",
-            "modelo": "Prueba1",
+            "nombre": "prueba Postman", 
+            "descripcion":"Prueba2",
+            "modelo": "Prueba2",
             "numero_serie": "12345",
             "fecha_compra": "2026-03-11",
-            "precio_compra": 10.3,
+            "precio_compra": 200,
+            "valor_actual": 20,
             "valor_residual": 1,
             "vida_util_anios": 9,
             "id_metodo_depreciacion": 1,

@@ -11,6 +11,9 @@ router.get('/', assetController.verActivos)
 router.get('/id/:id', assetController.buscarActivoId)
 router.get('/nombre/:nombre', assetController.buscarActivoNombre)
 
+//Obtener activos en
+router.get('/activos', assetController.getActivosFront);
+
 // EDITAR Y ELIMINAR
 router.delete('/:id', assetController.dropActivo)
 router.put('/:id', assetController.editarActivo)
