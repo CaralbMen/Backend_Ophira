@@ -86,7 +86,7 @@ CREATE TABLE aula (
     id_aula varchar(10) PRIMARY KEY,
 	id_piso varchar(10) NOT NULL,
     numero_aula VARCHAR(50) NOT NULL,
-    
+    tipo varchar(30) not null default 'Aula',
     CONSTRAINT fk_aula_piso
         FOREIGN KEY (id_piso)
         REFERENCES piso(id_piso)
@@ -94,7 +94,7 @@ CREATE TABLE aula (
 	constraint u_aula unique(id_piso, numero_aula)
 );
 insert into aula values
-('A105', 'A1', 5);
+('A105', 'A1', 5, 'Aula');
 select * from aula;
 
 
@@ -134,14 +134,16 @@ CREATE TABLE activo (
     fecha_inicio_depreciacion DATE NULL,
     fecha_ultima_depreciacion DATE NULL,
     fecha_prox_depreciacion DATE NULL,
-    valor_actual NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (valor_actual >= 0),
     precio_compra NUMERIC(12,2) NOT NULL CHECK (precio_compra >= 0),
+    valor_actual NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (valor_actual >= 0),
     valor_residual NUMERIC(12,2) DEFAULT 0 CHECK (valor_residual >= 0),
     vida_util_anios INTEGER CHECK (vida_util_anios > 0),
     id_metodo_depreciacion INTEGER NOT NULL,
     id_categoria INTEGER NOT NULL,
     id_estado_activo INTEGER NOT NULL,
     id_aula INTEGER NOT NULL,
+    id_responsable INTEGER default null,
+    multiparte BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT fk_activo_categoria
         FOREIGN KEY (id_categoria)
         REFERENCES categoria(id_categoria),
@@ -153,37 +155,42 @@ CREATE TABLE activo (
         REFERENCES aula(id_aula),
     CONSTRAINT fk_activo_metodo_depreciacion
         FOREIGN KEY (id_metodo_depreciacion)
-        REFERENCES metodo_depreciacion(id_metodo_depreciacion)
+        REFERENCES metodo_depreciacion(id_metodo_depreciacion),
+    constraint fk_activo_responsable
+        foreign key (id_responsable)
+        references usuario(id_usuario)
 );
 CREATE TABLE partes_de_activo (
     id_parte SERIAL PRIMARY KEY,
     id_activo INTEGER NOT NULL,
     numero_parte VARCHAR(100) NOT NULL,
-    ubicacion VARCHAR(255) NOT NULL,
+    id_aula VARCHAR(10) NOT NULL,
     descripcion TEXT,
     CONSTRAINT fk_partes_activo
         FOREIGN KEY (id_activo)
         REFERENCES activo(id_activo)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    constraint fk_aula_parte_activo foreign key(id_aula)
+	references aula(id_aula)
 );
 
 CREATE INDEX idx_partes_activo ON partes_de_activo(id_activo);
 
-CREATE TABLE activo_responsable (
-    id_activo_responsable SERIAL PRIMARY KEY,
-    id_activo INTEGER NOT NULL,
-    id_usuario INTEGER NOT NULL,
-    fecha_inicio TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_fin TIMESTAMP,
-    CONSTRAINT fk_responsable_activo
-        FOREIGN KEY (id_activo)
-        REFERENCES activo(id_activo)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_responsable_usuario
-        FOREIGN KEY (id_usuario)
-        REFERENCES usuario(id_usuario)
-        ON DELETE RESTRICT
-);
+-- CREATE TABLE activo_responsable (
+--     id_activo_responsable SERIAL PRIMARY KEY,
+--     id_activo INTEGER NOT NULL,
+--     id_usuario INTEGER NOT NULL,
+--     fecha_inicio TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     fecha_fin TIMESTAMP,
+--     CONSTRAINT fk_responsable_activo
+--         FOREIGN KEY (id_activo)
+--         REFERENCES activo(id_activo)
+--         ON DELETE CASCADE,
+--     CONSTRAINT fk_responsable_usuario
+--         FOREIGN KEY (id_usuario)
+--         REFERENCES usuario(id_usuario)
+--         ON DELETE RESTRICT
+-- );
 
 CREATE TABLE movimiento (
     id_movimiento SERIAL PRIMARY KEY,
@@ -265,7 +272,7 @@ CREATE TABLE auditoria (
     fecha_auditoria TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     observaciones TEXT,
 	estados_activos JSONB,
-    ubicacion VARCHAR(255) NULL,
+    id_aula VARCHAR(10) NULL,
     estado_general VARCHAR(50) NOT NULL DEFAULT 'finalizada',
     CONSTRAINT fk_auditoria_movimiento
         FOREIGN KEY (id_movimiento)
@@ -273,7 +280,9 @@ CREATE TABLE auditoria (
         ON DELETE CASCADE,
     CONSTRAINT fk_auditoria_usuario
         FOREIGN KEY (id_usuario_auditor)
-        REFERENCES usuario(id_usuario)
+        REFERENCES usuario(id_usuario),
+    constraint fk_aula_auditoria foreign key(id_aula)
+    references aula(id_aula)
 );
 
 
