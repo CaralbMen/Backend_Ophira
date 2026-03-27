@@ -132,6 +132,9 @@ CREATE TABLE activo (
     numero_serie VARCHAR(150) UNIQUE,
     fecha_compra DATE NOT NULL,
     fecha_inicio_depreciacion DATE NULL,
+    fecha_ultima_depreciacion DATE NULL,
+    fecha_prox_depreciacion DATE NULL,
+    valor_actual NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (valor_actual >= 0),
     precio_compra NUMERIC(12,2) NOT NULL CHECK (precio_compra >= 0),
     valor_residual NUMERIC(12,2) DEFAULT 0 CHECK (valor_residual >= 0),
     vida_util_anios INTEGER CHECK (vida_util_anios > 0),
@@ -152,6 +155,19 @@ CREATE TABLE activo (
         FOREIGN KEY (id_metodo_depreciacion)
         REFERENCES metodo_depreciacion(id_metodo_depreciacion)
 );
+CREATE TABLE partes_de_activo (
+    id_parte SERIAL PRIMARY KEY,
+    id_activo INTEGER NOT NULL,
+    numero_parte VARCHAR(100) NOT NULL,
+    ubicacion VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    CONSTRAINT fk_partes_activo
+        FOREIGN KEY (id_activo)
+        REFERENCES activo(id_activo)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_partes_activo ON partes_de_activo(id_activo);
 
 CREATE TABLE activo_responsable (
     id_activo_responsable SERIAL PRIMARY KEY,
@@ -249,6 +265,8 @@ CREATE TABLE auditoria (
     fecha_auditoria TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     observaciones TEXT,
 	estados_activos JSONB,
+    ubicacion VARCHAR(255) NULL,
+    estado_general VARCHAR(50) NOT NULL DEFAULT 'finalizada',
     CONSTRAINT fk_auditoria_movimiento
         FOREIGN KEY (id_movimiento)
         REFERENCES movimiento(id_movimiento)
@@ -257,6 +275,7 @@ CREATE TABLE auditoria (
         FOREIGN KEY (id_usuario_auditor)
         REFERENCES usuario(id_usuario)
 );
+
 
 -- Datos para el jSONB 
 INSERT INTO metodo_depreciacion (nombre, descripcion, parametros) VALUES
