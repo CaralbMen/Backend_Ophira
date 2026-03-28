@@ -72,18 +72,62 @@ const verActivos = async(req, res) => { // ver TODOS los activos
 const buscarActivoId = async(req, res) => { // buscar activo por ID
     const id = req.params.id;
     try{
-        const { rows } = await pool.query(`SELECT *, c.nombre, au.nombre, e.nombre  FROM activo a
+        const { rows } = await pool.query(`
+            SELECT 
+                a.id_activo,
+                a.nombre,
+                a.descripcion,
+                a.modelo,
+                a.numero_serie,
+                a.fecha_compra,
+                a.precio_compra,
+                a.valor_actual,
+                a.valor_residual,
+                a.vida_util_anios,
+                a.id_metodo_depreciacion,
+                a.id_categoria,
+                c.nombre AS categoria,
+                a.id_estado_activo,
+                e.nombre AS estado,
+                e.color,
+                a.id_aula,
+                au.tipo AS tipo_aula,
+                a.id_responsable,
+                u.nombre_usuario AS responsable,
+                a.fecha_registro,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id_parte', p.id_parte,
+                            'numero_parte', p.numero_parte,
+                            'id_aula', p.id_aula,
+                            'descripcion', p.descripcion
+                        )
+                        ORDER BY p.numero_parte
+                    ) FILTER (WHERE p.id_parte IS NOT NULL),
+                    '[]'::json
+                ) AS partes
+            FROM activo a
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula au ON a.id_aula = au.id_aula
+            JOIN usuario u ON a.id_responsable = u.id_usuario
+            LEFT JOIN partes_de_activo p ON a.id_activo = p.id_activo
             WHERE a.id_activo = $1
+            GROUP BY
+                a.id_activo,
+                c.nombre,
+                e.nombre,
+                e.color,
+                au.tipo,
+                u.nombre_usuario
             `, [id])
 
         if (rows.length == 0){
             return res.status(404).json({msg: "Activo no encontrado"})
         }
 
-        res.status(200).json({rows, codigo: 200})
+        res.status(200).json({rows: rows[0], codigo: 200})
     } catch (e){
         console.log(e)
         res.status(500).json({err: e})
