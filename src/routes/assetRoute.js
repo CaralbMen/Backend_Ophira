@@ -25,4 +25,6 @@ router.put('/:id', assetController.editarActivo)
 router.get('/dashboard', assetController.getDatosDashboard);
 // Dtos para el reporte
 router.get('/reporte', assetController.getDatosReporte);
+router.get('/movimientos', assetController.getUltimosMovimientosActivo);
+
 module.exports= router;

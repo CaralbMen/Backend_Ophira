@@ -74,27 +74,35 @@ const verActivos = async(req, res) => { // ver TODOS los activos
         res.status(500).json({err: e})
     }
 }
-
-const verActivosDelUser = async(req, res) => { // ver TODOS los activos con id de usuario para mobile
+const verActivosDelUser = async (req, res) => {
     const id = req.usuario.id
-    try{
-        const { rows } = await pool.query(`SELECT
-            a.*, 
-            c.nombre AS categoria_nombre,
-            e.nombre AS estado_nombre,
-            au.numero_aula,
-            au.tipo AS tipo_aula
+
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                a.*, 
+                c.nombre AS categoria_nombre,
+                e.nombre AS estado_nombre,
+                au.numero_aula,
+                au.tipo AS tipo_aula
             FROM activo a
-            JOIN categoria c ON a.id_categoria = c.id_categoria
-            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
-            JOIN aula au ON a.id_aula = au.id_aula
-            WHERE a.id_responsable = $1
-            `, [id])
+            JOIN activo_responsable ar 
+                ON a.id_activo = ar.id_activo
+            JOIN categoria c 
+                ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e 
+                ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au 
+                ON a.id_aula = au.id_aula
+            WHERE ar.id_usuario = $1
+              AND ar.fecha_fin IS NULL
+        `, [id])
 
         res.status(200).json({ rows })
-    } catch (e){
+
+    } catch (e) {
         console.log(e)
-        res.status(500).json({err: e})
+        res.status(500).json({ err: e })
     }
 }
 
@@ -313,6 +321,19 @@ const getActivoFront = async(req, res) => {
         res.status(500).json({err: e})
     }
 }
+const getUltimosMovimientosActivo= async(req, res)=>{
+    try{
+        const {rows} = await pool.query(`select a.id_activo, a.nombre, e.nombre as estado, au.tipo, a.id_aula
+            from movimiento m join activo a on m.id_activo= a.id_activo
+            join estado_activo e on a.id_estado_activo= e.id_estado_activo
+            join aula au on a.id_aula= au.id_aula
+            order by m.fecha_movimiento desc limit 5`);
+        res.status(200).json(rows);
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({mensaje: `Error en el servidor ${e}`});
+    }
+}
 
 const getActivosFront= async(req, res)=>{
     try{
@@ -385,4 +406,4 @@ const getDatosReporte= async(req, res) => {
         }
 }
 
-module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte }
+module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
