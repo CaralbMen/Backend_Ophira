@@ -344,5 +344,14 @@ const getDatosDashboard = async(req, res) => {
         res.status(500).json({mensaje: `Error en el servidor ${e}`});
     }
 }
+const getDatosReporte= async(req, res) => {
+        try {
+            const response = await pool.query(`select * from reporte`);
+            res.status(200).json(response.rows);
+        } catch (e) {
+            console.log(e);
+            res.status(500).json({mensaje: `Error en el servidor ${e}`});
+        }
+}
 
-module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard }
+module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte }
