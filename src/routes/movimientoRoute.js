@@ -1,19 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const movimientoController = require('../controllers/movimientoController');
-//const { editarEstadoActivo } = require('../controllers/estadoActivoController');
 
-// el de estado de activo no lo puse yo xd dany, pero de todas formas lo dejo por cualquiuer cosa
-router.get('/',movimientoController.verMovimiento)
+// VER TODOS
+router.get('/', movimientoController.verMovimiento)
 
-router.get('/:id',movimientoController.buscarMovimientoID)
+// FILTROS
+router.get('/tipo/:tipo', movimientoController.verMovimientoPorTipo)
+router.get('/activo/:id', movimientoController.verMovimientoPorActivo)
+router.get('/usuario/:id', movimientoController.verMovimientoPorUsuario)
 
-router.post('/',movimientoController.crearMovimiento)
+// BUSCAR POR ID
+router.get('/:id', movimientoController.buscarMovimientoID)
 
-router.delete('/:id',movimientoController.dropMovimiento)
+// CREAR
+router.post('/', movimientoController.crearMovimiento)
 
+// ELIMINAR
+router.delete('/:id', movimientoController.dropMovimiento)
+
+// EDITAR
 router.put('/:id', movimientoController.editarMovimiento)
-
-//router.put('/:id',movimientoController,editarEstadoActivo)
 
 module.exports = router;
