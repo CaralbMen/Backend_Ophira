@@ -23,4 +23,6 @@ router.put('/:id', assetController.editarActivo)
 
 // Datos del dash
 router.get('/dashboard', assetController.getDatosDashboard);
+// Dtos para el reporte
+router.get('/reporte', assetController.getDatosReporte);
 module.exports= router;
