@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "seed": "psql -U user -d ophira_qr -f database/seeders/seed.sql",
+    "reset_db": "psql -U your_user -d ophira_qr -f database/reset_db.sql"
   },
   "keywords": [],
   "author": "",
