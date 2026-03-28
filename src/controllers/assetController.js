@@ -326,7 +326,7 @@ const getActivosFront= async(req, res)=>{
                 aula.tipo AS tipo_aula,
                 e.nombre AS estado,
                 e.color,
-                NULL::TIMESTAMP AS fecha_registro,
+                a.fecha_registro,
                 COALESCE(
                     json_agg(
                         json_build_object(
@@ -354,7 +354,7 @@ const getActivosFront= async(req, res)=>{
                 aula.tipo,
                 e.nombre,
                 e.color
-            ORDER BY a.id_activo DESC
+            ORDER BY a.fecha_registro DESC
         `);
         if(response.rows.length === 0){
             return res.status(404).json({mensaje: 'No hay activos registrados'});

@@ -7,9 +7,9 @@ const obtenerUsuario= async(req, res)=>{
     if(!id) return res.status(400).json({message: 'El ID es requerido'});
     try{
         console.log('ID recibido: ', id);
-        const usuario= await pool.query('SELECT * FROM usuario WHERE id_usuario = $1', [id]);
+        const usuario= await pool.query('SELECT id_usuario, nombre_usuario, apellido_paterno, apellido_materno, correo, telefono, id_rol, id_puesto, fecha_registro FROM usuario WHERE id_usuario = $1', [id]);
         if(usuario.rows.length === 0) return res.status(404).json({message: 'Usuario no encontrado', codigo: 404});
-        res.status(200).json({codigo: 200, usuario: usuario.rows[0]});
+        res.status(200).json(usuario.rows[0]);
     }catch(e){
         console.error(e);
         return res.status(500).json({message: 'Error en el servidor', codigo: 500, error: e});
@@ -54,7 +54,7 @@ const obtenerUsuarios= async(req, res)=>{
             res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }
         console.log(result);
-        res.status(200).json({mensaje: 'Usuarios obtenidos', codigo: 200, data: result});
+        res.status(200).json(result.rows);
     }catch(e){
         console.log('error: '+e);
         res.status(500).json({mensaje:'Error en el servidor', codigo: 500, error: e});
