@@ -13,8 +13,8 @@ const verMovimiento = async (req,res)=>{
             JOIN movimiento_ubicacion mu ON m.id_movimiento = mu.id_movimiento
             JOIN usuario u ON m.id_usuario = u.id_usuario
             JOIN activo a ON a.id_activo = m.id_activo
-            JOIN aula al1 ON mu.id_origen = al1.id_aula
-            JOIN aula al2 ON mu.id_destino = al2.id_aula
+            JOIN aula al1 ON mu.id_aula_origen = al1.id_aula
+            JOIN aula al2 ON mu.id_aula_destino = al2.id_aula
         `)
 
         res.status(200).json({msg:"Movimientos cargados con éxito",rows})
@@ -39,8 +39,8 @@ const buscarMovimientoID = async (req,res) =>{
             JOIN movimiento_ubicacion mu ON m.id_movimiento = mu.id_movimiento
             JOIN usuario u ON m.id_usuario = u.id_usuario
             JOIN activo a ON a.id_activo = m.id_activo
-            JOIN aula al1 ON mu.id_origen = al1.id_aula
-            JOIN aula al2 ON mu.id_destino = al2.id_aula
+            JOIN aula al1 ON mu.id_aula_origen = al1.id_aula
+            JOIN aula al2 ON mu.id_aula_destino = al2.id_aula
             WHERE m.id_movimiento = $1
         `,[id])
 
@@ -58,22 +58,47 @@ const buscarMovimientoID = async (req,res) =>{
 
 const crearMovimiento = async (req,res) =>{
     try{
-        const {tipo_movimiento, fecha_movimiento, descripcion, id_usuario, id_activo} = req.body;
+        const {
+            tipo_movimiento,
+            fecha_movimiento,
+            descripcion,
+            id_usuario,
+            id_activo,
+            id_aula_origen,
+            id_aula_destino
+        } = req.body;
 
         if (!tipo_movimiento) return res.status(400).json({msg:"Tipo obligatorio"})
         if (!id_usuario) return res.status(400).json({msg:"Usuario obligatorio"})
         if (!id_activo) return res.status(400).json({msg:"Activo obligatorio"})
+        if (!id_aula_origen) return res.status(400).json({msg:"Aula origen obligatoria"})
+        if (!id_aula_destino) return res.status(400).json({msg:"Aula destino obligatoria"})
+
+        await pool.query('BEGIN')
 
         const {rows} = await pool.query(`
+
             INSERT INTO movimiento 
             (tipo_movimiento, fecha_movimiento, descripcion, id_usuario, id_activo) 
             VALUES ($1,$2,$3,$4,$5) RETURNING *
         `,
         [tipo_movimiento, fecha_movimiento, descripcion, id_usuario, id_activo])
 
+
+         const id_movimiento = rows[0].id_movimiento
+
+        await pool.query(`
+            INSERT INTO movimiento_ubicacion
+            (id_movimiento, id_aula_origen, id_aula_destino)
+            VALUES ($1, $2, $3)
+        `,
+        [id_movimiento, id_aula_origen, id_aula_destino])
+
+        await pool.query('COMMIT')
         res.status(201).json({msg:"Movimiento creado exitosamente",datos: rows[0]})
 
     }catch(e){
+        await pool.query('ROLLBACK')
         console.log(e)
         res.status(500).json({ err: e })
     }
