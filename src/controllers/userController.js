@@ -16,10 +16,10 @@ const obtenerUsuario= async(req, res)=>{
     }
 }
 const crearUsuario= async(req, res)=>{
-    const {nombre, apaterno, amaterno, correo, telefono, id_rol, id_puesto, password}= req.body;
-    if(!nombre) return res.status(400).json({message: 'El nombre es requerido'});
-    if(!apaterno) return res.status(400).json({message: 'El apellido paterno es requerido'});
-    if(!amaterno) return res.status(400).json({message: 'El apellido materno es requerido'});
+    const {nombre_usuario, apellido_paterno, apellido_materno, correo, telefono, id_rol, id_puesto, password}= req.body;
+    if(!nombre_usuario) return res.status(400).json({message: 'El nombre de usuario es requerido'});
+    if(!apellido_paterno) return res.status(400).json({message: 'El apellido paterno es requerido'});
+    if(!apellido_materno) return res.status(400).json({message: 'El apellido materno es requerido'});
     if(!correo) return res.status(400).json({message: 'El correo es requerido'});
     try{
         const usuario= await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
@@ -34,7 +34,8 @@ const crearUsuario= async(req, res)=>{
             const salt= await bcrypt.genSalt(10);
             const hashedPassword= await bcrypt.hash(password, salt);
             const result= await pool.query('INSERT INTO usuario (nombre_usuario, apellido_paterno, apellido_materno, correo, telefono, id_rol, id_puesto, password) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-                [nombre, apaterno, amaterno, correo, telefono, id_rol, id_puesto, hashedPassword]);
+                [nombre_usuario, apellido_paterno, apellido_materno, correo, telefono, id_rol, id_puesto, hashedPassword]);
+            console.log('Usuario creado: ', result.rows[0]);
             res.status(201).json({mensaje: 'Usuario creado exitosamente', usuario: result.rows[0], codigo: 201});
         }catch(e){
             console.error(e);
@@ -48,7 +49,7 @@ const crearUsuario= async(req, res)=>{
 }
 const obtenerUsuarios= async(req, res)=>{
     try{
-        const result= await pool.query('SELECT * FROM usuario');
+        const result= await pool.query('select u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, r.nombre as rol, p.nombre as puesto, a.nombre as area, u.activo, u.fecha_registro from usuario u join rol r on u.id_rol= r.id_rol join puesto p on u.id_puesto= p.id_puesto join area a on p.id_area= a.id_area');
         if(result.rowCount===0){
             res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }
@@ -61,7 +62,7 @@ const obtenerUsuarios= async(req, res)=>{
 }
 
 const modificarUsuario= async(req, res)=>{
-    const {nombre= '', apaterno= '', amaterno= '', correo= '', telefono= '', id_rol= '', id_puesto= '', password= ''}= req.body;
+    const {nombre_usuario= '', apellido_paterno= '', apellido_materno= '', correo= '', telefono= '', id_rol= '', id_puesto= '', password= ''}= req.body;
     const id= req.params.id;
     try{
         const usuario= await pool.query('SELECT * FROM usuario WHERE id_usuario = $1', [id]);
@@ -69,9 +70,9 @@ const modificarUsuario= async(req, res)=>{
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
 
-        if(nombre) usuario.rows[0].nombre_usuario= nombre;
-        if(apaterno) usuario.rows[0].apellido_paterno= apaterno;
-        if(amaterno) usuario.rows[0].apellido_materno= amaterno;
+        if(nombre_usuario) usuario.rows[0].nombre_usuario= nombre_usuario;
+        if(apellido_paterno) usuario.rows[0].apellido_paterno= apellido_paterno;
+        if(apellido_materno) usuario.rows[0].apellido_materno= apellido_materno;
         if(correo) usuario.rows[0].correo= correo;
         if(password){
             const salt= await bcrypt.genSalt(10);
