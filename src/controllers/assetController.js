@@ -56,7 +56,13 @@ const crearActivo = async (req, res) => {
 
 const verActivos = async(req, res) => { // ver TODOS los activos
     try{
-        const { rows } = await pool.query(`SELECT *, c.nombre, a.nombre, e.nombre  FROM activo a
+        const { rows } = await pool.query(`SELECT
+            a.*, 
+            c.nombre AS categoria_nombre,
+            e.nombre AS estado_nombre,
+            au.numero_aula,
+            au.tipo AS tipo_aula
+            FROM activo a
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula au ON a.id_aula = au.id_aula
@@ -72,7 +78,13 @@ const verActivos = async(req, res) => { // ver TODOS los activos
 const verActivosDelUser = async(req, res) => { // ver TODOS los activos con id de usuario para mobile
     const id = req.usuario.id
     try{
-        const { rows } = await pool.query(`SELECT *, c.nombre AS categoria_nombre, a.nombre, e.nombre AS estado_nombre FROM activo a
+        const { rows } = await pool.query(`SELECT
+            a.*, 
+            c.nombre AS categoria_nombre,
+            e.nombre AS estado_nombre,
+            au.numero_aula,
+            au.tipo AS tipo_aula
+            FROM activo a
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula au ON a.id_aula = au.id_aula
@@ -111,7 +123,7 @@ const buscarActivoId = async(req, res) => { // buscar activo por ID
                 au.tipo AS tipo_aula,
                 a.id_responsable,
                 u.nombre_usuario AS responsable,
-                a.fecha_registro,
+                NULL::TIMESTAMP AS fecha_registro,
                 COALESCE(
                     json_agg(
                         json_build_object(
@@ -128,15 +140,29 @@ const buscarActivoId = async(req, res) => { // buscar activo por ID
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula au ON a.id_aula = au.id_aula
-            JOIN usuario u ON a.id_responsable = u.id_usuario
+            LEFT JOIN usuario u ON a.id_responsable = u.id_usuario
             LEFT JOIN partes_de_activo p ON a.id_activo = p.id_activo
             WHERE a.id_activo = $1
             GROUP BY
                 a.id_activo,
+                a.nombre,
+                a.descripcion,
+                a.modelo,
+                a.numero_serie,
+                a.fecha_compra,
+                a.precio_compra,
+                a.valor_actual,
+                a.valor_residual,
+                a.vida_util_anios,
+                a.id_metodo_depreciacion,
+                a.id_categoria,
                 c.nombre,
+                a.id_estado_activo,
                 e.nombre,
                 e.color,
+                a.id_aula,
                 au.tipo,
+                a.id_responsable,
                 u.nombre_usuario
             `, [id])
 
@@ -154,7 +180,13 @@ const buscarActivoId = async(req, res) => { // buscar activo por ID
 const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
     const nombre = req.params.nombre;
     try{
-        const { rows } = await pool.query(`SELECT *, c.nombre, au.nombre, e.nombre  FROM activo a
+        const { rows } = await pool.query(`SELECT
+            a.*,
+            c.nombre AS categoria_nombre,
+            au.numero_aula,
+            au.tipo AS tipo_aula,
+            e.nombre AS estado_nombre
+            FROM activo a
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula au ON a.id_aula = au.id_aula
@@ -273,7 +305,7 @@ const getActivoFront = async(req, res) => {
     const id = req.params.id;
     try {
         console.log(`Obteniendo detalles del activo con ID: ${id}`)
-        const { rows } = await pool.query(`select a.id_activo, a.nombre, c.nombre as categoria, enc.nombre_usuario as encargado, enc.id_usuario, e.nombre as estado, e.color from activo a join categoria c on a.id_categoria = c.id_categoria join usuario enc on a.id_responsable = enc.id_usuario join estado_activo e on a.id_estado_activo = e.id_estado_activo where a.id_activo = $1`, [id])
+        const { rows } = await pool.query(`select a.id_activo, a.nombre, c.nombre as categoria, enc.nombre_usuario as encargado, enc.id_usuario, e.nombre as estado, e.color from activo a join categoria c on a.id_categoria = c.id_categoria left join usuario enc on a.id_responsable = enc.id_usuario join estado_activo e on a.id_estado_activo = e.id_estado_activo where a.id_activo = $1`, [id])
         res.status(200).json(rows)
 
     } catch (e) {
@@ -294,7 +326,7 @@ const getActivosFront= async(req, res)=>{
                 aula.tipo AS tipo_aula,
                 e.nombre AS estado,
                 e.color,
-                a.fecha_registro,
+                NULL::TIMESTAMP AS fecha_registro,
                 COALESCE(
                     json_agg(
                         json_build_object(
@@ -311,7 +343,7 @@ const getActivosFront= async(req, res)=>{
             JOIN categoria c ON a.id_categoria = c.id_categoria
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula aula ON a.id_aula = aula.id_aula
-            JOIN usuario u ON a.id_responsable = u.id_usuario
+            LEFT JOIN usuario u ON a.id_responsable = u.id_usuario
             LEFT JOIN partes_de_activo p ON a.id_activo = p.id_activo
             GROUP BY
                 a.id_activo,
@@ -321,8 +353,7 @@ const getActivosFront= async(req, res)=>{
                 aula.id_aula,
                 aula.tipo,
                 e.nombre,
-                e.color,
-                a.fecha_registro
+                e.color
             ORDER BY a.id_activo DESC
         `);
         if(response.rows.length === 0){

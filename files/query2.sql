@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS aula (
     id_aula VARCHAR(10) PRIMARY KEY,
     id_piso VARCHAR(10) NOT NULL,
     numero_aula VARCHAR(50) NOT NULL,
+    tipo varchar(30) NOT NULL DEFAULT 'Aula',
     CONSTRAINT fk_aula_piso
         FOREIGN KEY (id_piso)
         REFERENCES piso(id_piso)
@@ -155,17 +156,21 @@ CREATE TABLE IF NOT EXISTS activo (
     modelo VARCHAR(150),
     numero_serie VARCHAR(150) UNIQUE,
     fecha_compra DATE NOT NULL,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_inicio_depreciacion DATE NULL,
     fecha_ultima_depreciacion DATE NULL,
     fecha_prox_depreciacion DATE NULL,
-    valor_actual NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (valor_actual >= 0),
     precio_compra NUMERIC(12,2) NOT NULL CHECK (precio_compra >= 0),
+
+    valor_actual NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (valor_actual >= 0),
     valor_residual NUMERIC(12,2) DEFAULT 0 CHECK (valor_residual >= 0),
     vida_util_anios INTEGER CHECK (vida_util_anios > 0),
     id_metodo_depreciacion INTEGER NOT NULL,
     id_categoria INTEGER NOT NULL,
     id_estado_activo INTEGER NOT NULL,
     id_aula VARCHAR(10) NOT NULL,
+    id_responsable INTEGER default NULL,
+    multiparte boolean not null default false,
     CONSTRAINT fk_activo_categoria
         FOREIGN KEY (id_categoria)
         REFERENCES categoria(id_categoria),
@@ -177,23 +182,28 @@ CREATE TABLE IF NOT EXISTS activo (
         REFERENCES aula(id_aula),
     CONSTRAINT fk_activo_metodo_depreciacion
         FOREIGN KEY (id_metodo_depreciacion)
-        REFERENCES metodo_depreciacion(id_metodo_depreciacion)
+        REFERENCES metodo_depreciacion(id_metodo_depreciacion),
+    constraint fk_activo_responsable
+        foreign key (id_responsable)
+        references usuario(id_usuario)
 );
 
 CREATE TABLE IF NOT EXISTS partes_de_activo (
     id_parte SERIAL PRIMARY KEY,
     id_activo INTEGER NOT NULL,
     numero_parte VARCHAR(100) NOT NULL,
-    ubicacion VARCHAR(255) NOT NULL,
+    id_aula VARCHAR(10) NOT NULL,
     descripcion TEXT,
     CONSTRAINT fk_partes_activo
         FOREIGN KEY (id_activo)
         REFERENCES activo(id_activo)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    constraint fk_aula_parte_activo foreign key(id_aula)
+	references aula(id_aula)
 );
 
 CREATE INDEX IF NOT EXISTS idx_partes_activo ON partes_de_activo(id_activo);
-
+-- Pendiente de checar
 CREATE TABLE IF NOT EXISTS activo_responsable (
     id_activo_responsable SERIAL PRIMARY KEY,
     id_activo INTEGER NOT NULL,
@@ -286,7 +296,7 @@ CREATE TABLE IF NOT EXISTS auditoria (
     fecha_auditoria TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     observaciones TEXT,
     estados_activos JSONB,
-    ubicacion VARCHAR(255) NULL,
+    id_aula VARCHAR(10) NULL,
     estado_general VARCHAR(50) NOT NULL DEFAULT 'finalizada',
     CONSTRAINT fk_auditoria_movimiento
         FOREIGN KEY (id_movimiento)
@@ -294,7 +304,9 @@ CREATE TABLE IF NOT EXISTS auditoria (
         ON DELETE CASCADE,
     CONSTRAINT fk_auditoria_usuario
         FOREIGN KEY (id_usuario_auditor)
-        REFERENCES usuario(id_usuario)
+        REFERENCES usuario(id_usuario),
+    constraint fk_aula_auditoria foreign key(id_aula)
+    references aula(id_aula)
 );
 
 
@@ -336,7 +348,7 @@ INSERT INTO piso VALUES
 
 -- AULA
 -- Ajustado a tu estructura REAL: (id_aula, id_piso, numero_aula)
-INSERT INTO aula VALUES
+INSERT INTO aula (id_aula, id_piso, numero_aula) VALUES
 ('A208', 'A2', '8'),
 ('A105', 'A1', '5');
 
@@ -361,25 +373,25 @@ INSERT INTO activo (
     nombre, descripcion, modelo, numero_serie,
     fecha_compra, fecha_inicio_depreciacion, fecha_ultima_depreciacion, fecha_prox_depreciacion,
     valor_actual, precio_compra, valor_residual, vida_util_anios,
-    id_metodo_depreciacion, id_categoria, id_estado_activo, id_aula
+    id_metodo_depreciacion, id_categoria, id_estado_activo, id_aula, id_responsable
 ) VALUES
 (
     'Laptop', 'Laptop para desarrollo', 'EliteBook 840', 'SN-LAP-001',
     '2025-03-27', '2025-03-27', '2025-03-27', '2026-03-27',
     10000.00, 10000.00, 1000.00, 5,
-    1, 1, 1, 'A105'
+    1, 1, 1, 'A105', 1
 ),
 (
     'Impresora', 'Impresora láser', 'WorkForce Pro', 'SN-IMP-001',
     '2025-03-27', '2025-03-27', '2025-03-27', '2026-03-27',
     8000.00, 8000.00, 500.00, 4,
-    2, 1, 1, 'A105'
+    2, 1, 1, 'A105', 1
 ),
 (
     'Servidor', 'Servidor de red', 'PowerEdge R740', 'SN-SRV-001',
     '2025-03-27', '2025-03-27', '2025-03-27', '2026-03-27',
     20000.00, 20000.00, 2000.00, 5,
-    3, 1, 1, 'A105'
+    3, 1, 1, 'A105', 1
 );
 
 
