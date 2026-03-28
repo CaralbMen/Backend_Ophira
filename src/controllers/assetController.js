@@ -252,6 +252,18 @@ const editarActivo = async(req, res) => {
         res.status(500).json({err: e})
     }
 }
+const getActivoFront = async(req, res) => {
+    const id = req.params.id;
+    try {
+        console.log(`Obteniendo detalles del activo con ID: ${id}`)
+        const { rows } = await pool.query(`select a.id_activo, a.nombre, c.nombre as categoria, enc.nombre_usuario as encargado, enc.id_usuario, e.nombre as estado, e.color from activo a join categoria c on a.id_categoria = c.id_categoria join usuario enc on a.id_responsable = enc.id_usuario join estado_activo e on a.id_estado_activo = e.id_estado_activo where a.id_activo = $1`, [id])
+        res.status(200).json(rows)
+
+    } catch (e) {
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
 
 const getActivosFront= async(req, res)=>{
     try{
@@ -306,4 +318,14 @@ const getActivosFront= async(req, res)=>{
     }
 }
 
-module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront }
+const getDatosDashboard = async(req, res) => {
+    try {
+        const response = await pool.query(`select * from dashboard`);
+        res.status(200).json(response.rows);
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({mensaje: `Error en el servidor ${e}`});
+    }
+}
+
+module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard }
