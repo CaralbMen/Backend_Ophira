@@ -44,15 +44,16 @@ DROP TABLE IF EXISTS rol CASCADE;
 
 -- ========================================================
 -- Vistas para pantallas de analisis
-create view dashboard as(
-	select count(id_activo) from activo as total_activos,
-	(select count(id_activo) from activo 
-	where id_estado_activo=(
-		select id_estado_activo from estado_activo where nombre='Mantenimiento')) as en_mantenimiento,
-	(select count (id_activo) from activo where date(fecha_registro)>= current_date - interval '7 days' ) as recientes,
-	(select sum(valor_actual) from activo) as valor_total
-);
-
+-- Dashboard
+create or replace view dashboard as
+select
+    count(*) as total_activos,
+    count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Mantenimiento')) AS activos_en_mantenimiento,
+    count(*) filter (WHERE DATE(fecha_registro) >= CURRENT_DATE - interval '7 days') AS aniadidos_recientemente,
+    SUM(valor_actual) AS valor_total
+FROM activo;
+select * from dashboard;
+-- Reportes
 create or replace view reporte as
 select
     count(*) AS total_activos,
@@ -73,7 +74,14 @@ select
 	count(*) filter (where extract(month from fecha_registro)=11 and extract(year from fecha_registro)= extract(year from current_date)) as noviembre,
 	count(*) filter (where extract(month from fecha_registro)=12 and extract(year from fecha_registro)= extract(year from current_date)) as diciembre
 FROM activo;
-
+-- Historial
+create view historial_actividad as
+(select m.fecha_movimiento,u.id_usuario, u.nombre_usuario as responsable, u.apellido_paterno, m.id_activo, e.nombre as estado, e.color, m.descripcion
+from movimiento m join usuario u on m.id_usuario= u.id_usuario
+join activo a on m.id_activo= a.id_activo
+join estado_activo e on a.id_estado_activo= e.id_estado_activo
+);
+select * from historial_actividad;
 
 -- =====================================================
 -- 1. TABLAS PRINCIPALES
@@ -1373,3 +1381,15 @@ VALUES (1, CURRENT_DATE, CURRENT_TIME);
 
 SELECT * FROM movimiento ORDER BY id_movimiento DESC;
 SELECT * FROM movimiento_depreciacion ORDER BY id_movimiento DESC;
+
+
+
+-- pruebas para consumir
+select * from usuario;
+select * from movimiento;
+
+
+
+
+
+

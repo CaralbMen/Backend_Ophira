@@ -313,6 +313,19 @@ const getActivoFront = async(req, res) => {
         res.status(500).json({err: e})
     }
 }
+const getUltimosMovimientosActivo= async(req, res)=>{
+    try{
+        const {rows} = await pool.query(`select a.id_activo, a.nombre, e.nombre as estado, au.tipo, a.id_aula
+            from movimiento m join activo a on m.id_activo= a.id_activo
+            join estado_activo e on a.id_estado_activo= e.id_estado_activo
+            join aula au on a.id_aula= au.id_aula
+            order by m.fecha_movimiento desc limit 5`);
+        res.status(200).json(rows);
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({mensaje: `Error en el servidor ${e}`});
+    }
+}
 
 const getActivosFront= async(req, res)=>{
     try{
@@ -385,4 +398,4 @@ const getDatosReporte= async(req, res) => {
         }
 }
 
-module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte }
+module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
