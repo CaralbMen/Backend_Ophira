@@ -29,10 +29,20 @@ const crearActivo = async (req, res) => {
         datos.precio_compra, datos.valor_actual, datos.valor_residual, datos.vida_util_anios, datos.id_metodo_depreciacion, datos.id_categoria, datos.id_estado_activo, datos.id_aula, datos.id_responsable])
         
         if(datos.partes){
-            let parteCount = 1;
-            for (const parte of datos.partes){
-                await pool.query(`INSERT INTO partes_de_activo (id_activo, numero_parte, id_aula, descripcion) VALUES ($1, $2, $3, $4)`, [rows[0].id_activo, parteCount, parte.id_aula, parte.descripcion])
-                parteCount++;
+            try{
+                console.log("Insertando partes...")
+                await pool.query('BEGIN');
+                
+                let parteCount = 2;
+                for (const parte of datos.partes){
+                    await pool.query(`INSERT INTO partes_de_activo (id_activo, numero_parte, id_aula, descripcion) VALUES ($1, $2, $3, $4)`, [rows[0].id_activo, parteCount, parte.id_aula, parte.descripcion || `Parte ${parteCount}`])
+                    parteCount++;
+                }
+                
+                await pool.query('COMMIT');
+            } catch(e){
+                await pool.query('ROLLBACK');
+                throw e;
             }
         }
         res.status(200).json({msg: "Datos insertados exitosamente", datos: rows, codigo: 200})
@@ -123,17 +133,19 @@ const dropActivo = async(req, res) => {
 
 
 const editarActivo = async(req, res) => {
-    const {nombre, descripcion, modelo, numero_serie, fecha_compra, precio_compra, id_categoria, id_estado_activo, id_aula} = req.body
+    const datos = req.body
     const id_activo = req.params.id
 
     try {
-        const { rows } = await pool.query('SELECT * FROM activo WHERE id_activo = $1', [id_activo])
-        const activo = rows[0]
+        await pool.query('BEGIN')
 
+        const { rows } = await pool.query('SELECT * FROM activo WHERE id_activo = $1', [id_activo])
         if (rows.length === 0){
+            await pool.query('ROLLBACK')
             return res.status(404).json({msg: "Activo no encontrado"})
         }
 
+        const activo = rows[0]
         const r = await pool.query(`
             UPDATE activo SET
             nombre = $2,
@@ -142,30 +154,56 @@ const editarActivo = async(req, res) => {
             numero_serie = $5,
             fecha_compra = $6,
             precio_compra = $7,
-            id_categoria = $8,
-            id_estado_activo = $9,
-            id_aula = $10
-            WHERE id_activo = $1 RETURNING *
+            valor_actual = $8,
+            valor_residual = $9,
+            vida_util_anios = $10,
+            id_metodo_depreciacion = $11,
+            id_categoria = $12,
+            id_estado_activo = $13,
+            id_aula = $14,
+            id_responsable = $15
+            WHERE id_activo = $1
+            RETURNING *
         `,
         [
             id_activo,
-            nombre || activo.nombre,
-            descripcion || activo.descripcion,
-            modelo || activo.modelo,
-            numero_serie || activo.numero_serie,
-            fecha_compra || activo.fecha_compra,
-            precio_compra || activo.precio_compra,
-            id_categoria || activo.id_categoria,
-            id_estado_activo || activo.id_estado_activo,
-            id_aula || activo.id_aula
+            datos.nombre ?? activo.nombre,
+            datos.descripcion ?? activo.descripcion,
+            datos.modelo ?? activo.modelo,
+            datos.numero_serie ?? activo.numero_serie,
+            datos.fecha_compra ?? activo.fecha_compra,
+            datos.precio_compra ?? activo.precio_compra,
+            datos.valor_actual ?? activo.valor_actual,
+            datos.valor_residual ?? activo.valor_residual,
+            datos.vida_util_anios ?? activo.vida_util_anios,
+            datos.id_metodo_depreciacion ?? activo.id_metodo_depreciacion,
+            datos.id_categoria ?? activo.id_categoria,
+            datos.id_estado_activo ?? activo.id_estado_activo,
+            datos.id_aula ?? activo.id_aula,
+            datos.id_responsable ?? activo.id_responsable
         ])
 
+        if (Array.isArray(datos.partes)) {
+            await pool.query('DELETE FROM partes_de_activo WHERE id_activo = $1', [id_activo])
 
+            let parteCount = 2
+            for (const parte of datos.partes) {
+                await pool.query(
+                    'INSERT INTO partes_de_activo (id_activo, numero_parte, id_aula, descripcion) VALUES ($1, $2, $3, $4)',
+                    [id_activo, parteCount, parte.id_aula, parte.descripcion || `Parte ${parteCount}`]
+                )
+                parteCount++
+            }
+        }
 
+        await pool.query('COMMIT')
         res.status(200).json({msg: "Activo actualizado exitosamente", activo: r.rows[0]})
-
-
     } catch (e){
+        try {
+            await pool.query('ROLLBACK')
+        } catch (rollbackError) {
+            console.log(rollbackError)
+        }
         console.log(e)
         res.status(500).json({err: e})
     }
@@ -173,9 +211,49 @@ const editarActivo = async(req, res) => {
 
 const getActivosFront= async(req, res)=>{
     try{
-        const response= await pool.query('select a.id_activo, a.nombre, u.nombre_usuario as responsable, c.nombre as categoria, aula.id_aula as aula, aula.tipo as tipo_aula, e.nombre as estado, e.color, a.fecha_registro from activo a JOIN categoria c ON a.id_categoria = c.id_categoria JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo JOIN aula aula ON a.id_aula = aula.id_aula JOIN usuario u ON a.id_responsable = u.id_usuario');
-        if(response.rows===0){
-            res.status(404).json({mensaje: 'No hay activos registrados'});
+        const response= await pool.query(`
+            SELECT 
+                a.id_activo,
+                a.nombre,
+                u.nombre_usuario AS responsable,
+                c.nombre AS categoria,
+                aula.id_aula AS aula,
+                aula.tipo AS tipo_aula,
+                e.nombre AS estado,
+                e.color,
+                a.fecha_registro,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id_parte', p.id_parte,
+                            'numero_parte', p.numero_parte,
+                            'id_aula', p.id_aula,
+                            'descripcion', p.descripcion
+                        )
+                        ORDER BY p.numero_parte
+                    ) FILTER (WHERE p.id_parte IS NOT NULL),
+                    '[]'::json
+                ) AS partes
+            FROM activo a
+            JOIN categoria c ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula aula ON a.id_aula = aula.id_aula
+            JOIN usuario u ON a.id_responsable = u.id_usuario
+            LEFT JOIN partes_de_activo p ON a.id_activo = p.id_activo
+            GROUP BY
+                a.id_activo,
+                a.nombre,
+                u.nombre_usuario,
+                c.nombre,
+                aula.id_aula,
+                aula.tipo,
+                e.nombre,
+                e.color,
+                a.fecha_registro
+            ORDER BY a.id_activo DESC
+        `);
+        if(response.rows.length === 0){
+            return res.status(404).json({mensaje: 'No hay activos registrados'});
         }
         res.status(200).json(response.rows);
     }catch(e){
