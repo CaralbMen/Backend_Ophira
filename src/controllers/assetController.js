@@ -69,6 +69,23 @@ const verActivos = async(req, res) => { // ver TODOS los activos
     }
 }
 
+const verActivosDelUser = async(req, res) => { // ver TODOS los activos con id de usuario para mobile
+    const id = req.usuario.id
+    try{
+        const { rows } = await pool.query(`SELECT *, c.nombre AS categoria_nombre, a.nombre, e.nombre AS estado_nombre FROM activo a
+            JOIN categoria c ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au ON a.id_aula = au.id_aula
+            WHERE a.id_responsable = $1
+            `, [id])
+
+        res.status(200).json({ rows })
+    } catch (e){
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
+
 const buscarActivoId = async(req, res) => { // buscar activo por ID
     const id = req.params.id;
     try{
@@ -306,4 +323,4 @@ const getActivosFront= async(req, res)=>{
     }
 }
 
-module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront }
+module.exports = { crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, verActivosDelUser }
