@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const auditoriaController = require('../controllers/auditoriaController')
+const authMiddleware = require('../middlewares/authMiddleware')
 
 // CREAR AUDITORIA
-router.post('/', auditoriaController.crearAuditoria)
+router.post('/', authMiddleware, auditoriaController.crearAuditoria)
 
 // VER AUDITORIAS (todas, buscar por id)
 router.get('/', auditoriaController.verAuditorias)

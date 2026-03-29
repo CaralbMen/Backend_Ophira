@@ -11,6 +11,7 @@ router.post('/', assetController.crearActivo)
 router.get('/', assetController.verActivos)
 router.get('/id/:id', assetController.buscarActivoId)
 router.get('/nombre/:nombre', assetController.buscarActivoNombre)
+router.get('/aula/:aula', assetController.buscarActivoAula)
 router.get('/activosUser', authMiddleware, assetController.verActivosDelUser)
 
 //Obtener activos en Front

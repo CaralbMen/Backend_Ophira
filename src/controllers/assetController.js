@@ -74,27 +74,35 @@ const verActivos = async(req, res) => { // ver TODOS los activos
         res.status(500).json({err: e})
     }
 }
-
-const verActivosDelUser = async(req, res) => { // ver TODOS los activos con id de usuario para mobile
+const verActivosDelUser = async (req, res) => {
     const id = req.usuario.id
-    try{
-        const { rows } = await pool.query(`SELECT
-            a.*, 
-            c.nombre AS categoria_nombre,
-            e.nombre AS estado_nombre,
-            au.numero_aula,
-            au.tipo AS tipo_aula
+
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                a.*, 
+                c.nombre AS categoria_nombre,
+                e.nombre AS estado_nombre,
+                au.numero_aula,
+                au.tipo AS tipo_aula
             FROM activo a
-            JOIN categoria c ON a.id_categoria = c.id_categoria
-            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
-            JOIN aula au ON a.id_aula = au.id_aula
-            WHERE a.id_responsable = $1
-            `, [id])
+            JOIN activo_responsable ar 
+                ON a.id_activo = ar.id_activo
+            JOIN categoria c 
+                ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e 
+                ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au 
+                ON a.id_aula = au.id_aula
+            WHERE ar.id_usuario = $1
+              AND ar.fecha_fin IS NULL
+        `, [id])
 
         res.status(200).json({ rows })
-    } catch (e){
+
+    } catch (e) {
         console.log(e)
-        res.status(500).json({err: e})
+        res.status(500).json({ err: e })
     }
 }
 
@@ -192,6 +200,33 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
             JOIN aula au ON a.id_aula = au.id_aula
             WHERE a.nombre = $1
             `, [nombre])
+
+        if (rows.length == 0){
+            return res.status(404).json({msg: "Activo no encontrado"})
+        }
+
+        res.status(200).json({rows, codigo: 200})
+    } catch (e){
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
+
+const buscarActivoAula = async(req, res) => { // buscar activo por AULA
+    const aula = req.params.aula;
+    try{
+        const { rows } = await pool.query(`SELECT
+            a.*,
+            c.nombre AS categoria_nombre,
+            au.numero_aula,
+            au.tipo AS tipo_aula,
+            e.nombre AS estado_nombre
+            FROM activo a
+            JOIN categoria c ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au ON a.id_aula = au.id_aula
+            WHERE a.id_aula = $1
+            `, [aula])
 
         if (rows.length == 0){
             return res.status(404).json({msg: "Activo no encontrado"})
@@ -398,4 +433,4 @@ const getDatosReporte= async(req, res) => {
         }
 }
 
-module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
+module.exports = { verActivosDelUser, buscarActivoAula ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }

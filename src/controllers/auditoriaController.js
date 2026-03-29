@@ -2,12 +2,13 @@ const pool = require('../config/db')
 
 const crearAuditoria = async (req, res) => {
     try {
-        const { id_movimiento, id_usuario_auditor, observaciones } = req.body
+        const { id_movimiento, observaciones, estados_activos, id_aula, estado_general } = req.body
+        const id_usuario_auditor = req.usuario.id
 
         const { rows } = await pool.query(`
-            INSERT INTO auditoria (id_movimiento, id_usuario_auditor, observaciones)
-            VALUES ($1, $2, $3) RETURNING *
-        `, [id_movimiento, id_usuario_auditor, observaciones])
+            INSERT INTO auditoria (id_movimiento, id_usuario_auditor, observaciones, estados_activos, id_aula, estado_general)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+        `, [id_movimiento, id_usuario_auditor, observaciones, estados_activos ? JSON.stringify(estados_activos) : null, id_aula, estado_general ?? 'finalizada'])
 
         res.status(201).json({msg: "Auditoria creada exitosamente", datos: rows[0]})
     } catch (e) {
@@ -19,9 +20,9 @@ const crearAuditoria = async (req, res) => {
 const verAuditorias = async (req, res) => {
     try {
         const { rows } = await pool.query(`
-            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno  FROM auditoria a
-            JOIN usuario u ON a.id_usuario_editor = u.id_usuario
-            `)
+            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno FROM auditoria a
+            JOIN usuario u ON a.id_usuario_auditor = u.id_usuario
+        `)
 
         res.status(200).json({rows})
     } catch (e){
@@ -32,11 +33,11 @@ const verAuditorias = async (req, res) => {
 
 const buscarAuditoriaId = async (req, res) => {
     try {
-        const { id } = req.params.id
+        const { id } = req.params
 
         const { rows } = await pool.query(`
-            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno  FROM auditoria a
-            JOIN usuario u ON a.id_usuario_editor = u.id_usuario
+            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno FROM auditoria a
+            JOIN usuario u ON a.id_usuario_auditor = u.id_usuario
             WHERE a.id_auditoria = $1
         `, [id])
 
@@ -54,12 +55,16 @@ const buscarAuditoriaId = async (req, res) => {
 const editarAuditoria = async (req, res) => {
     try {
         const { id } = req.params
-        const { observaciones } = req.body
+        const { observaciones, estados_activos, id_aula, estado_general } = req.body
 
         const { rows } = await pool.query(`
-            UPDATE auditoria SET observaciones = $1
-            WHERE id_auditoria = $2 RETURNING *
-        `, [observaciones, id])
+            UPDATE auditoria SET
+                observaciones = $1,
+                estados_activos = $2,
+                id_aula = $3,
+                estado_general = $4
+            WHERE id_auditoria = $5 RETURNING *
+        `, [observaciones, estados_activos ? JSON.stringify(estados_activos) : null, id_aula, estado_general, id])
 
         if (rows.length === 0) {
             return res.status(404).json({msg: "Auditoria no encontrada"})
