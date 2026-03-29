@@ -2,7 +2,8 @@ const pool = require('../config/db')
 
 const crearAuditoria = async (req, res) => {
     try {
-        const { id_movimiento, id_usuario_auditor, observaciones, estados_activos, id_aula, estado_general } = req.body
+        const { id_movimiento, observaciones, estados_activos, id_aula, estado_general } = req.body
+        const id_usuario_auditor = req.usuario.id
 
         const { rows } = await pool.query(`
             INSERT INTO auditoria (id_movimiento, id_usuario_auditor, observaciones, estados_activos, id_aula, estado_general)

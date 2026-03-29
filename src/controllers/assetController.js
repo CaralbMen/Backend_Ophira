@@ -212,6 +212,33 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
     }
 }
 
+const buscarActivoAula = async(req, res) => { // buscar activo por AULA
+    const aula = req.params.aula;
+    try{
+        const { rows } = await pool.query(`SELECT
+            a.*,
+            c.nombre AS categoria_nombre,
+            au.numero_aula,
+            au.tipo AS tipo_aula,
+            e.nombre AS estado_nombre
+            FROM activo a
+            JOIN categoria c ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au ON a.id_aula = au.id_aula
+            WHERE a.id_aula = $1
+            `, [aula])
+
+        if (rows.length == 0){
+            return res.status(404).json({msg: "Activo no encontrado"})
+        }
+
+        res.status(200).json({rows, codigo: 200})
+    } catch (e){
+        console.log(e)
+        res.status(500).json({err: e})
+    }
+}
+
 const dropActivo = async(req, res) => {
     const id = req.params.id
     try {
@@ -406,4 +433,4 @@ const getDatosReporte= async(req, res) => {
         }
 }
 
-module.exports = { verActivosDelUser ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
+module.exports = { verActivosDelUser, buscarActivoAula ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
