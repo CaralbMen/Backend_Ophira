@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { registrarMovimientoActualizacion } = require('../utils/movimientoLogger')
 
 const crearActivo = async (req, res) => {
     const datos = req.body
@@ -45,6 +46,22 @@ const crearActivo = async (req, res) => {
                 throw e;
             }
         }
+
+        try {
+            await registrarMovimientoActualizacion({
+                idUsuario: datos.id_responsable,
+                idActivo: rows[0].id_activo,
+                descripcion: `Alta de activo #${rows[0].id_activo}`,
+                campoModificado: 'activo_creado',
+                valorAnterior: null,
+                valorNuevo: JSON.stringify(rows[0]),
+                justificacion: 'Registro automatico por creacion de activo',
+                db: pool,
+            })
+        } catch (movError) {
+            console.log('No se pudo registrar movimiento de creacion:', movError)
+        }
+
         res.status(200).json({msg: "Datos insertados exitosamente", datos: rows, codigo: 200})
 
 
@@ -321,6 +338,24 @@ const editarActivo = async(req, res) => {
                     [id_activo, parteCount, parte.id_aula, parte.descripcion || `Parte ${parteCount}`]
                 )
                 parteCount++
+            }
+        }
+
+        const idUsuarioMovimiento = Number(datos.id_usuario_accion || datos.id_responsable || activo.id_responsable)
+        if (idUsuarioMovimiento) {
+            try {
+                await registrarMovimientoActualizacion({
+                    idUsuario: idUsuarioMovimiento,
+                    idActivo: Number(id_activo),
+                    descripcion: `Edicion de activo #${id_activo}`,
+                    campoModificado: 'activo_actualizado',
+                    valorAnterior: JSON.stringify(activo),
+                    valorNuevo: JSON.stringify(r.rows[0]),
+                    justificacion: datos.justificacion || 'Registro automatico por modificacion de activo',
+                    db: pool,
+                })
+            } catch (movError) {
+                console.log('No se pudo registrar movimiento de actualizacion:', movError)
             }
         }
 
