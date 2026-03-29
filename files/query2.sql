@@ -42,46 +42,6 @@ DROP TABLE IF EXISTS area CASCADE;
 DROP TABLE IF EXISTS rol CASCADE;
 
 
--- ========================================================
--- Vistas para pantallas de analisis
--- Dashboard
-create or replace view dashboard as
-select
-    count(*) as total_activos,
-    count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Mantenimiento')) AS activos_en_mantenimiento,
-    count(*) filter (WHERE DATE(fecha_registro) >= CURRENT_DATE - interval '7 days') AS aniadidos_recientemente,
-    SUM(valor_actual) AS valor_total
-FROM activo;
-select * from dashboard;
--- Reportes
-create or replace view reporte as
-select
-    count(*) AS total_activos,
-	count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Activo')) AS bienes_activos,
-    count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Mantenimiento')) AS activos_en_mantenimiento,
-    count(*) filter (WHERE DATE(fecha_registro) >= CURRENT_DATE - INTERVAL '7 days') AS aniadidos_recientemente,
-    SUM(valor_actual) AS valor_total,
-	count(*) filter (where extract(month from fecha_registro)=1 and extract(year from fecha_registro)= extract(year from current_date)) as enero,
-	count(*) filter (where extract(month from fecha_registro)=2 and extract(year from fecha_registro)= extract(year from current_date)) as febrero,
-	count(*) filter (where extract(month from fecha_registro)=3 and extract(year from fecha_registro)= extract(year from current_date)) as marzo,
-	count(*) filter (where extract(month from fecha_registro)=4 and extract(year from fecha_registro)= extract(year from current_date)) as abril,
-	count(*) filter (where extract(month from fecha_registro)=5 and extract(year from fecha_registro)= extract(year from current_date)) as mayo,
-	count(*) filter (where extract(month from fecha_registro)=6 and extract(year from fecha_registro)= extract(year from current_date)) as junio,
-	count(*) filter (where extract(month from fecha_registro)=7 and extract(year from fecha_registro)= extract(year from current_date)) as julio,
-	count(*) filter (where extract(month from fecha_registro)=8 and extract(year from fecha_registro)= extract(year from current_date)) as agosto,
-	count(*) filter (where extract(month from fecha_registro)=9 and extract(year from fecha_registro)= extract(year from current_date)) as septiembre,
-	count(*) filter (where extract(month from fecha_registro)=10 and extract(year from fecha_registro)= extract(year from current_date)) as octubre,
-	count(*) filter (where extract(month from fecha_registro)=11 and extract(year from fecha_registro)= extract(year from current_date)) as noviembre,
-	count(*) filter (where extract(month from fecha_registro)=12 and extract(year from fecha_registro)= extract(year from current_date)) as diciembre
-FROM activo;
--- Historial
-create view historial_actividad as
-(select m.fecha_movimiento,u.id_usuario, u.nombre_usuario as responsable, u.apellido_paterno, m.id_activo, e.nombre as estado, e.color, m.descripcion
-from movimiento m join usuario u on m.id_usuario= u.id_usuario
-join activo a on m.id_activo= a.id_activo
-join estado_activo e on a.id_estado_activo= e.id_estado_activo
-);
-select * from historial_actividad;
 
 -- =====================================================
 -- 1. TABLAS PRINCIPALES
@@ -1384,11 +1344,47 @@ SELECT * FROM movimiento_depreciacion ORDER BY id_movimiento DESC;
 
 
 
--- pruebas para consumir
-select * from usuario;
-select * from movimiento;
 
-
+-- ========================================================
+-- Vistas para pantallas de analisis
+-- Dashboard
+create or replace view dashboard as
+select
+    count(*) as total_activos,
+    count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Mantenimiento')) AS activos_en_mantenimiento,
+    count(*) filter (WHERE DATE(fecha_registro) >= CURRENT_DATE - interval '7 days') AS aniadidos_recientemente,
+    SUM(valor_actual) AS valor_total
+FROM activo;
+select * from dashboard;
+-- Reportes
+create or replace view reporte as
+select
+    count(*) AS total_activos,
+	count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Activo')) AS bienes_activos,
+    count(*) filter (WHERE id_estado_activo = (select id_estado_activo from estado_activo where nombre= 'Mantenimiento')) AS activos_en_mantenimiento,
+    count(*) filter (WHERE DATE(fecha_registro) >= CURRENT_DATE - INTERVAL '7 days') AS aniadidos_recientemente,
+    SUM(valor_actual) AS valor_total,
+	count(*) filter (where extract(month from fecha_registro)=1 and extract(year from fecha_registro)= extract(year from current_date)) as enero,
+	count(*) filter (where extract(month from fecha_registro)=2 and extract(year from fecha_registro)= extract(year from current_date)) as febrero,
+	count(*) filter (where extract(month from fecha_registro)=3 and extract(year from fecha_registro)= extract(year from current_date)) as marzo,
+	count(*) filter (where extract(month from fecha_registro)=4 and extract(year from fecha_registro)= extract(year from current_date)) as abril,
+	count(*) filter (where extract(month from fecha_registro)=5 and extract(year from fecha_registro)= extract(year from current_date)) as mayo,
+	count(*) filter (where extract(month from fecha_registro)=6 and extract(year from fecha_registro)= extract(year from current_date)) as junio,
+	count(*) filter (where extract(month from fecha_registro)=7 and extract(year from fecha_registro)= extract(year from current_date)) as julio,
+	count(*) filter (where extract(month from fecha_registro)=8 and extract(year from fecha_registro)= extract(year from current_date)) as agosto,
+	count(*) filter (where extract(month from fecha_registro)=9 and extract(year from fecha_registro)= extract(year from current_date)) as septiembre,
+	count(*) filter (where extract(month from fecha_registro)=10 and extract(year from fecha_registro)= extract(year from current_date)) as octubre,
+	count(*) filter (where extract(month from fecha_registro)=11 and extract(year from fecha_registro)= extract(year from current_date)) as noviembre,
+	count(*) filter (where extract(month from fecha_registro)=12 and extract(year from fecha_registro)= extract(year from current_date)) as diciembre
+FROM activo;
+-- Historial
+create view historial_actividad as
+(select m.fecha_movimiento,u.id_usuario, u.nombre_usuario as responsable, u.apellido_paterno, m.id_activo, e.nombre as estado, e.color, m.descripcion
+from movimiento m join usuario u on m.id_usuario= u.id_usuario
+join activo a on m.id_activo= a.id_activo
+join estado_activo e on a.id_estado_activo= e.id_estado_activo
+);
+select * from historial_actividad;
 
 
 
