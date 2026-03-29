@@ -13,11 +13,13 @@ const puestoRouter= require('./routes/puestoRoutes');
 const categoriaRouter = require('./routes/categoriaRoutes');
 const metodoDepreciacionRouter = require('./routes/metodoDepreciacionRoutes');
 const estadoActivoRouter = require('./routes/estadoActivoRoutes');
+const movimientoRouter = require('./routes/movimientoRoute');
 app.use(cors());
 app.use(express.json());
 require('dotenv').config();
 
 // app.use('/api/');
+app.use('/api/movimientos', movimientoRouter);
 app.use('/api/assets', assetRouter);
 app.use('/api/roles', rolRouter);
 app.use('/api/usuarios', userRouter);
