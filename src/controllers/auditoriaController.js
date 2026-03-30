@@ -20,8 +20,10 @@ const crearAuditoria = async (req, res) => {
 const verAuditorias = async (req, res) => {
     try {
         const { rows } = await pool.query(`
-            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno FROM auditoria a
+            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno, p.nombre as puesto, ar.nombre as area FROM auditoria a
             JOIN usuario u ON a.id_usuario_auditor = u.id_usuario
+            JOIN puesto p ON u.id_puesto = p.id_puesto 
+            JOIN area ar ON p.id_area = ar.id_area
         `)
 
         res.status(200).json({rows})
@@ -36,8 +38,10 @@ const buscarAuditoriaId = async (req, res) => {
         const { id } = req.params
 
         const { rows } = await pool.query(`
-            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno FROM auditoria a
+            SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno, p.nombre as puesto, ar.nombre as area FROM auditoria a
             JOIN usuario u ON a.id_usuario_auditor = u.id_usuario
+            JOIN puesto p ON u.id_puesto = p.id_puesto 
+            JOIN area ar ON p.id_area = ar.id_area
             WHERE a.id_auditoria = $1
         `, [id])
 
