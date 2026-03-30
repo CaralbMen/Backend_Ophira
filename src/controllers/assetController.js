@@ -229,31 +229,92 @@ const buscarActivoNombre = async(req, res) => { // buscar activo por NOMBRE
     }
 }
 
-const buscarActivoAula = async(req, res) => { // buscar activo por AULA
-    const aula = req.params.aula;
-    try{
-        const { rows } = await pool.query(`SELECT
-            a.*,
-            c.nombre AS categoria_nombre,
-            au.numero_aula,
-            au.tipo AS tipo_aula,
-            e.nombre AS estado_nombre
-            FROM activo a
-            JOIN categoria c ON a.id_categoria = c.id_categoria
-            JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
-            JOIN aula au ON a.id_aula = au.id_aula
-            WHERE a.id_aula = $1
-            `, [aula])
+const buscarActivoAula = async (req, res) => {
+  const aula = req.params.aula;
 
-        if (rows.length == 0){
-            return res.status(404).json({msg: "Activo no encontrado"})
-        }
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        -- 🔥 Activo (explicit to avoid overwrite)
+        a.id_activo,
+        a.nombre AS activo_nombre,
+        a.descripcion,
+        a.modelo,
+        a.numero_serie,
+        a.fecha_compra,
+        a.fecha_registro,
+        a.fecha_inicio_depreciacion,
+        a.fecha_ultima_depreciacion,
+        a.fecha_prox_depreciacion,
+        a.precio_compra,
+        a.valor_actual,
+        a.valor_residual,
+        a.vida_util_anios,
+        a.id_metodo_depreciacion,
+        a.id_categoria,
+        a.id_estado_activo,
+        a.id_aula,
+        a.id_responsable,
+        a.multiparte,
 
-        res.status(200).json({rows, codigo: 200})
-    } catch (e){
-        console.log(e)
-        res.status(500).json({err: e})
+        -- Otros datos
+        c.nombre AS categoria_nombre,
+        au.numero_aula,
+        au.tipo AS tipo_aula,
+        e.nombre AS estado_nombre,
+
+        -- Responsable actual
+        u.id_usuario AS responsable_id,
+        u.nombre AS usuario_nombre,
+        u.apellido_paterno,
+        u.apellido_materno,
+        p.nombre AS puesto_nombre,
+        ar.nombre AS area_nombre
+
+      FROM activo a
+      JOIN categoria c ON a.id_categoria = c.id_categoria
+      JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
+      JOIN aula au ON a.id_aula = au.id_aula
+
+      LEFT JOIN activo_responsable arx 
+        ON a.id_activo = arx.id_activo 
+        AND arx.fecha_fin IS NULL
+
+      LEFT JOIN usuario u ON arx.id_usuario = u.id_usuario
+      LEFT JOIN puesto p ON u.id_puesto = p.id_puesto
+      LEFT JOIN area ar ON p.id_area = ar.id_area
+
+      WHERE a.id_aula = $1
+    `, [aula]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: "Activo no encontrado" });
     }
+
+    const formatted = rows.map(a => {
+      const nombreCompleto = [
+        a.usuario_nombre,
+        a.apellido_paterno,
+        a.apellido_materno
+      ].filter(Boolean).join(' ');
+
+      return {
+        ...a,
+        nombre: a.activo_nombre,
+
+        //responsable bonito
+        responsable_info: nombreCompleto
+          ? `${nombreCompleto} - ${a.puesto_nombre} - ${a.area_nombre}`
+          : 'Sin responsable',
+      }
+    })
+
+    res.status(200).json({ rows: formatted, codigo: 200 })
+
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({ err: e });
+  }
 }
 
 const dropActivo = async(req, res) => {
