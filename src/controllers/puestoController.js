@@ -2,7 +2,7 @@ const pool= require('../config/db');
 
 const obtenerPuestos= async(req, res)=>{
     try{
-        const result= await pool.query('select * from puesto');
+        const result= await pool.query('select p.*, a.nombre as nombre_area from puesto p join area a on p.id_area = a.id_area order by p.id_puesto');
         res.status(200).json(result.rows);
     } catch (error) {
         console.error('Error al obtener los puestos:', error);

@@ -641,7 +641,7 @@ DECLARE
     v_contador INT := 0;
     v_log TEXT := '';
 BEGIN
-    v_log := v_log || format('=== VERIFICANDO DEPRECIACIONES PENDIENTES: %s ===\n', p_fecha_proceso);
+    -- v_log := v_log || format('=== VERIFICANDO DEPRECIACIONES PENDIENTES: %s ===\n', p_fecha_proceso);
 
     FOR v_activo IN
         SELECT
@@ -667,7 +667,7 @@ BEGIN
             IF v_resultado.movimiento_id IS NOT NULL THEN
                 v_contador := v_contador + 1;
                 v_log := v_log || format(
-                    '✅ %s: Depreciación aplicada por %s. Nuevo valor: %s\n',
+                    '%s: Depreciación aplicada por %s. Nuevo valor: %s\n',
                     v_activo.nombre,
                     v_resultado.depreciacion_aplicada,
                     v_resultado.valor_nuevo
@@ -675,35 +675,15 @@ BEGIN
             END IF;
 
         EXCEPTION WHEN OTHERS THEN
-            v_log := v_log || format('❌ Error en %s: %s\n', v_activo.nombre, SQLERRM);
+            v_log := v_log || format('Error en %s: %s\n', v_activo.nombre, SQLERRM);
         END;
     END LOOP;
-
-    v_log := v_log || format('=== TOTAL DEPRECIACIONES APLICADAS: %s ===\n', v_contador);
-
-    INSERT INTO auditoria (
-        id_movimiento,
-        id_usuario_auditor,
-        observaciones,
-        estados_activos,
-        estado_general
-    ) VALUES (
-        NULL,
-        p_id_usuario,
-        v_log,
-        jsonb_build_object(
-            'proceso', 'depreciacion_automatica_login',
-            'fecha_ejecucion', p_fecha_proceso,
-            'activos_depreciados', v_contador
-        ),
-        'completada'
-    );
-
     RETURN v_log;
 END;
 $func$;
 
-
+select * from auditoria;
+select * from movimiento;
 -- =====================================================
 -- 3.4 FUNCIÓN PARA REGISTRAR LOGIN
 --     Y DISPARAR REVISIÓN DE DEPRECIACIONES
@@ -1387,5 +1367,13 @@ join estado_activo e on a.id_estado_activo= e.id_estado_activo
 select * from historial_actividad;
 
 
+SELECT 
+                m.*,
+                u.nombre_usuario,
+                a.nombre AS nombre_activo
+            FROM movimiento m
+            JOIN usuario u ON m.id_usuario = u.id_usuario
+            JOIN activo a ON a.id_activo = m.id_activo
+            ORDER BY m.id_movimiento DESC;
 
-
+select * from auditoria;

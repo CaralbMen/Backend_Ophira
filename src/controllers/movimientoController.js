@@ -1,14 +1,25 @@
 const pool = require('../config/db')
 
+const capitalizarPrimera = (valor = '') => {
+    const limpio = String(valor || '').trim()
+    if (!limpio) return ''
+    return limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase()
+}
+
 const verMovimiento = async (req,res)=>{
     try{
         const {rows} = await pool.query(`
             SELECT 
                 m.*,
                 u.nombre_usuario,
+                u.apellido_paterno,
+                p.nombre AS puesto,
+                ar.nombre AS area,
                 a.nombre AS nombre_activo
             FROM movimiento m
             JOIN usuario u ON m.id_usuario = u.id_usuario
+            LEFT JOIN puesto p ON u.id_puesto = p.id_puesto
+            LEFT JOIN area ar ON p.id_area = ar.id_area
             JOIN activo a ON a.id_activo = m.id_activo
             ORDER BY m.id_movimiento DESC
         `)
@@ -32,7 +43,7 @@ const verMovimientoPorTipo = async (req,res)=>{
             FROM movimiento m
             JOIN usuario u ON m.id_usuario = u.id_usuario
             JOIN activo a ON a.id_activo = m.id_activo
-            WHERE m.tipo_movimiento = $1
+            WHERE LOWER(m.tipo_movimiento) = LOWER($1)
             ORDER BY m.id_movimiento DESC
         `,[tipo])
 
@@ -138,7 +149,10 @@ const crearMovimiento = async (req,res)=>{
             id_activo
         } = req.body
 
-        if (!tipo_movimiento) return res.status(400).json({msg:"Tipo obligatorio"})
+        const tipoMovimientoNormalizado = capitalizarPrimera(tipo_movimiento)
+        const tipoMovimientoClave = tipoMovimientoNormalizado.toLowerCase()
+
+        if (!tipoMovimientoNormalizado) return res.status(400).json({msg:"Tipo obligatorio"})
         if (!id_usuario) return res.status(400).json({msg:"Usuario obligatorio"})
         if (!id_activo) return res.status(400).json({msg:"Activo obligatorio"})
 
@@ -149,7 +163,7 @@ const crearMovimiento = async (req,res)=>{
             (tipo_movimiento, fecha_movimiento, descripcion, id_usuario, id_activo) 
             VALUES ($1,$2,$3,$4,$5) RETURNING *
         `,[
-            tipo_movimiento,
+            tipoMovimientoNormalizado,
             fecha_movimiento,
             descripcion,
             id_usuario,
@@ -158,7 +172,12 @@ const crearMovimiento = async (req,res)=>{
 
         const id_movimiento = rows[0].id_movimiento
 
-        switch(tipo_movimiento){
+        switch(tipoMovimientoClave){
+
+            case 'escaneo': {
+                // El tipo escaneo no requiere tabla de detalle adicional.
+            }
+            break
 
             case 'ubicacion': {
                 const { id_aula_origen, id_aula_destino } = req.body
@@ -284,6 +303,9 @@ const editarMovimiento = async (req,res)=>{
         }
 
         const movimiento = rows[0]
+        const tipoNormalizado = tipo_movimiento
+            ? capitalizarPrimera(tipo_movimiento)
+            : movimiento.tipo_movimiento
 
         const r = await pool.query(`
             UPDATE movimiento SET
@@ -295,7 +317,7 @@ const editarMovimiento = async (req,res)=>{
             WHERE id_movimiento = $1 RETURNING *
         `,[
             id_movimiento,
-            tipo_movimiento ?? movimiento.tipo_movimiento,
+            tipoNormalizado,
             fecha_movimiento ?? movimiento.fecha_movimiento,
             descripcion ?? movimiento.descripcion,
             id_usuario ?? movimiento.id_usuario,

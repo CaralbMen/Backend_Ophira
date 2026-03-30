@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+const capitalizarPrimera = (valor = '') => {
+    const limpio = String(valor || '').trim();
+    if (!limpio) return '';
+    return limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase();
+};
+
 const resolverActivoParaMovimiento = async (idUsuario, db = pool) => {
     if (!idUsuario) {
         return null;
@@ -41,9 +47,9 @@ const registrarMovimientoActualizacion = async ({
 
     const movimiento = await db.query(
         `INSERT INTO movimiento (tipo_movimiento, descripcion, id_usuario, id_activo)
-         VALUES ('actualizacion', $1, $2, $3)
+         VALUES ($1, $2, $3, $4)
          RETURNING id_movimiento`,
-        [descripcion || 'Actualizacion del sistema', idUsuario, idActivo]
+        [capitalizarPrimera('actualizacion'), descripcion || 'Actualizacion del sistema', idUsuario, idActivo]
     );
 
     const idMovimiento = movimiento.rows[0].id_movimiento;
