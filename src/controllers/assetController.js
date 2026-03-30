@@ -404,6 +404,9 @@ const getActivosFront= async(req, res)=>{
                 a.id_activo,
                 a.nombre,
                 u.nombre_usuario AS responsable,
+                u.apellido_paterno AS responsable_apellido,
+                pu.nombre AS responsable_puesto,
+                ar.nombre AS responsable_area,
                 c.nombre AS categoria,
                 aula.id_aula AS aula,
                 aula.tipo AS tipo_aula,
@@ -427,11 +430,16 @@ const getActivosFront= async(req, res)=>{
             JOIN estado_activo e ON a.id_estado_activo = e.id_estado_activo
             JOIN aula aula ON a.id_aula = aula.id_aula
             LEFT JOIN usuario u ON a.id_responsable = u.id_usuario
+            LEFT JOIN puesto pu ON u.id_puesto = pu.id_puesto
+            LEFT JOIN area ar ON pu.id_area = ar.id_area
             LEFT JOIN partes_de_activo p ON a.id_activo = p.id_activo
             GROUP BY
                 a.id_activo,
                 a.nombre,
                 u.nombre_usuario,
+                u.apellido_paterno,
+                pu.nombre,
+                ar.nombre,
                 c.nombre,
                 aula.id_aula,
                 aula.tipo,
