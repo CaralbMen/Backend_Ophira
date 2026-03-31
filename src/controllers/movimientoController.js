@@ -15,12 +15,21 @@ const verMovimiento = async (req,res)=>{
                 u.apellido_paterno,
                 p.nombre AS puesto,
                 ar.nombre AS area,
-                a.nombre AS nombre_activo
+                a.nombre AS nombre_activo,
+                c.nombre AS categoria_activo,
+                ur.nombre_usuario AS responsable,
+                ur.apellido_paterno AS responsable_apellido,
+                pr.nombre AS responsable_puesto_activo,
+                arr.nombre AS responsable_area_activo
             FROM movimiento m
             JOIN usuario u ON m.id_usuario = u.id_usuario
             LEFT JOIN puesto p ON u.id_puesto = p.id_puesto
             LEFT JOIN area ar ON p.id_area = ar.id_area
             JOIN activo a ON a.id_activo = m.id_activo
+            LEFT JOIN categoria c ON a.id_categoria = c.id_categoria
+            LEFT JOIN usuario ur ON a.id_responsable = ur.id_usuario
+            LEFT JOIN puesto pr ON ur.id_puesto = pr.id_puesto
+            LEFT JOIN area arr ON pr.id_area = arr.id_area
             ORDER BY m.id_movimiento DESC
         `)
 
@@ -66,10 +75,24 @@ const verMovimientoPorActivo = async (req,res)=>{
             SELECT 
                 m.*,
                 u.nombre_usuario,
-                a.nombre AS nombre_activo
+                u.apellido_paterno,
+                p.nombre AS puesto,
+                ar.nombre AS area,
+                a.nombre AS nombre_activo,
+                c.nombre AS categoria_activo,
+                ur.nombre_usuario AS responsable,
+                ur.apellido_paterno AS responsable_apellido,
+                pr.nombre AS responsable_puesto_activo,
+                arr.nombre AS responsable_area_activo
             FROM movimiento m
             JOIN usuario u ON m.id_usuario = u.id_usuario
+            LEFT JOIN puesto p ON u.id_puesto = p.id_puesto
+            LEFT JOIN area ar ON p.id_area = ar.id_area
             JOIN activo a ON a.id_activo = m.id_activo
+            LEFT JOIN categoria c ON a.id_categoria = c.id_categoria
+            LEFT JOIN usuario ur ON a.id_responsable = ur.id_usuario
+            LEFT JOIN puesto pr ON ur.id_puesto = pr.id_puesto
+            LEFT JOIN area arr ON pr.id_area = arr.id_area
             WHERE m.id_activo = $1
             ORDER BY m.id_movimiento DESC
         `,[id])
