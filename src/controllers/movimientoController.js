@@ -162,6 +162,74 @@ const buscarMovimientoID = async (req,res)=>{
     }
 }
 
+const verDetalleMovimiento = async (req, res) => {
+    try {
+        const { id } = req.params
+
+        const { rows } = await pool.query(`
+            SELECT
+                m.id_movimiento,
+                m.tipo_movimiento,
+                m.fecha_movimiento,
+                m.descripcion,
+                m.id_usuario,
+                m.id_activo,
+                u.nombre_usuario,
+                u.apellido_paterno,
+                a.nombre AS nombre_activo,
+                ma.campo_modificado,
+                ma.valor_anterior,
+                ma.valor_nuevo,
+                ma.justificacion,
+                md.valor_depreciado,
+                md.valor_restante,
+                md.parametros_usados,
+                met.nombre AS metodo_depreciacion,
+                mu.id_aula_origen,
+                ao.numero_aula AS aula_origen,
+                ao.tipo AS tipo_aula_origen,
+                mu.id_aula_destino,
+                ad.numero_aula AS aula_destino,
+                ad.tipo AS tipo_aula_destino,
+                mb.motivo_baja
+            FROM movimiento m
+            JOIN usuario u ON m.id_usuario = u.id_usuario
+            JOIN activo a ON m.id_activo = a.id_activo
+            LEFT JOIN movimiento_actualizacion ma ON m.id_movimiento = ma.id_movimiento
+            LEFT JOIN movimiento_depreciacion md ON m.id_movimiento = md.id_movimiento
+            LEFT JOIN metodo_depreciacion met ON md.id_metodo_depreciacion = met.id_metodo_depreciacion
+            LEFT JOIN movimiento_ubicacion mu ON m.id_movimiento = mu.id_movimiento
+            LEFT JOIN aula ao ON mu.id_aula_origen = ao.id_aula
+            LEFT JOIN aula ad ON mu.id_aula_destino = ad.id_aula
+            LEFT JOIN movimiento_baja mb ON m.id_movimiento = mb.id_movimiento
+            WHERE m.id_movimiento = $1
+            LIMIT 1
+        `, [id])
+
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: 'Movimiento no encontrado' })
+        }
+
+        const detalle = rows[0]
+        const tipo = String(detalle.tipo_movimiento || '').trim().toLowerCase()
+        const tiposConDetalle = new Set(['depreciacion', 'actualizacion', 'ubicacion', 'baja'])
+
+        res.status(200).json({
+            msg: 'Detalle de movimiento cargado',
+            row: {
+                ...detalle,
+                detalle_disponible: tiposConDetalle.has(tipo),
+                valor_anterior_depreciacion: detalle.valor_depreciado != null && detalle.valor_restante != null
+                    ? Number(detalle.valor_depreciado) + Number(detalle.valor_restante)
+                    : null,
+            },
+        })
+    } catch (e) {
+        console.log(e)
+        res.status(500).json({ err: e })
+    }
+}
+
 const crearMovimiento = async (req,res)=>{
     try{
         const {
@@ -361,6 +429,7 @@ module.exports = {
     verMovimientoPorActivo,
     verMovimientoPorUsuario,
     buscarMovimientoID,
+    verDetalleMovimiento,
     crearMovimiento,
     dropMovimiento,
     editarMovimiento

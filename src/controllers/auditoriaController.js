@@ -23,7 +23,7 @@ const verAuditorias = async (req, res) => {
             SELECT a.*, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno, p.nombre as puesto, ar.nombre as area FROM auditoria a
             JOIN usuario u ON a.id_usuario_auditor = u.id_usuario
             JOIN puesto p ON u.id_puesto = p.id_puesto 
-            JOIN area ar ON p.id_area = ar.id_area
+            JOIN area ar ON p.id_area = ar.id_area order by a.fecha_auditoria desc
         `)
 
         res.status(200).json({rows})

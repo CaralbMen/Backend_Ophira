@@ -347,6 +347,15 @@ const editarActivo = async(req, res) => {
         }
 
         const activo = rows[0]
+        let partesPrevias = []
+        if (Array.isArray(datos.partes)) {
+            const partesPreviasQuery = await pool.query(
+                'SELECT id_aula, descripcion FROM partes_de_activo WHERE id_activo = $1 ORDER BY numero_parte ASC',
+                [id_activo]
+            )
+            partesPrevias = partesPreviasQuery.rows
+        }
+
         const r = await pool.query(`
             UPDATE activo SET
             nombre = $2,
@@ -400,16 +409,71 @@ const editarActivo = async(req, res) => {
         const idUsuarioMovimiento = Number(datos.id_usuario_accion || datos.id_responsable || activo.id_responsable)
         if (idUsuarioMovimiento) {
             try {
-                await registrarMovimientoActualizacion({
-                    idUsuario: idUsuarioMovimiento,
-                    idActivo: Number(id_activo),
-                    descripcion: `Edicion de activo ${id_activo}`,
-                    campoModificado: 'activo_actualizado',
-                    valorAnterior: JSON.stringify(activo),
-                    valorNuevo: JSON.stringify(r.rows[0]),
-                    justificacion: datos.justificacion || 'Registro automatico por modificacion de activo',
-                    db: pool,
-                })
+                const activoActualizado = r.rows[0]
+                const cambiosDetectados = []
+
+                const serializarValor = (valor) => {
+                    if (valor === null || valor === undefined) return null
+                    if (typeof valor === 'object') return JSON.stringify(valor)
+                    return String(valor)
+                }
+
+                const registrarCambioDetectado = (campo, anterior, nuevo) => {
+                    const anteriorTexto = serializarValor(anterior)
+                    const nuevoTexto = serializarValor(nuevo)
+
+                    if (anteriorTexto !== nuevoTexto) {
+                        cambiosDetectados.push({
+                            campo,
+                            anterior: anteriorTexto,
+                            nuevo: nuevoTexto,
+                        })
+                    }
+                }
+
+                registrarCambioDetectado('nombre', activo.nombre, activoActualizado.nombre)
+                registrarCambioDetectado('descripcion', activo.descripcion, activoActualizado.descripcion)
+                registrarCambioDetectado('modelo', activo.modelo, activoActualizado.modelo)
+                registrarCambioDetectado('numero_serie', activo.numero_serie, activoActualizado.numero_serie)
+                registrarCambioDetectado('fecha_compra', activo.fecha_compra, activoActualizado.fecha_compra)
+                registrarCambioDetectado('precio_compra', activo.precio_compra, activoActualizado.precio_compra)
+                registrarCambioDetectado('valor_actual', activo.valor_actual, activoActualizado.valor_actual)
+                registrarCambioDetectado('valor_residual', activo.valor_residual, activoActualizado.valor_residual)
+                registrarCambioDetectado('vida_util_anios', activo.vida_util_anios, activoActualizado.vida_util_anios)
+                registrarCambioDetectado('id_metodo_depreciacion', activo.id_metodo_depreciacion, activoActualizado.id_metodo_depreciacion)
+                registrarCambioDetectado('id_categoria', activo.id_categoria, activoActualizado.id_categoria)
+                registrarCambioDetectado('id_estado_activo', activo.id_estado_activo, activoActualizado.id_estado_activo)
+                registrarCambioDetectado('id_aula', activo.id_aula, activoActualizado.id_aula)
+                registrarCambioDetectado('id_responsable', activo.id_responsable, activoActualizado.id_responsable)
+
+                if (Array.isArray(datos.partes)) {
+                    const partesNuevas = datos.partes.map((parte) => ({
+                        id_aula: parte.id_aula,
+                        descripcion: parte.descripcion || null,
+                    }))
+                    registrarCambioDetectado('partes', partesPrevias, partesNuevas)
+                }
+
+                if (cambiosDetectados.length === 0) {
+                    cambiosDetectados.push({
+                        campo: 'activo_actualizado',
+                        anterior: null,
+                        nuevo: 'Sin cambios detectados en campos auditables',
+                    })
+                }
+
+                for (const cambio of cambiosDetectados) {
+                    await registrarMovimientoActualizacion({
+                        idUsuario: idUsuarioMovimiento,
+                        idActivo: Number(id_activo),
+                        descripcion: `Actualizacion de ${cambio.campo} en activo ${id_activo}`,
+                        campoModificado: cambio.campo,
+                        valorAnterior: cambio.anterior,
+                        valorNuevo: cambio.nuevo,
+                        justificacion: datos.justificacion || 'Registro automatico por modificacion de activo',
+                        db: pool,
+                    })
+                }
             } catch (movError) {
                 console.log('No se pudo registrar movimiento de actualizacion:', movError)
             }

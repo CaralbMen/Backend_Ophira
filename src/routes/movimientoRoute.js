@@ -9,6 +9,7 @@ router.get('/', movimientoController.verMovimiento)
 router.get('/tipo/:tipo', movimientoController.verMovimientoPorTipo)
 router.get('/activo/:id', movimientoController.verMovimientoPorActivo)
 router.get('/usuario/:id', movimientoController.verMovimientoPorUsuario)
+router.get('/:id/detalle', movimientoController.verDetalleMovimiento)
 
 // BUSCAR POR ID
 router.get('/:id', movimientoController.buscarMovimientoID)
