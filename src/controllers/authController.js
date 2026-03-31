@@ -13,6 +13,10 @@ const login= async(req, res)=>{
         const isMatch= await bcrypt.compare(password, usuario.rows[0].password);
         if(!isMatch) return res.status(401).json({message: 'Contraseña incorrecta'});
 
+        if (Number(usuario.rows[0].id_rol) !== 1) {
+            return res.status(403).json({message: 'Acceso denegado. Solo administradores pueden ingresar.'});
+        }
+
         const payload= {
             id: usuario.rows[0].id_usuario,
             nombre: usuario.rows[0].nombre_usuario,

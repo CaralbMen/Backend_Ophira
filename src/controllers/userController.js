@@ -7,7 +7,7 @@ const obtenerUsuario= async(req, res)=>{
     if(!id) return res.status(400).json({message: 'El ID es requerido'});
     try{
         console.log('ID recibido: ', id);
-        const usuario= await pool.query('SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, u.id_rol, u.id_puesto, u.activo, u.fecha_registro, p.nombre as puesto, a.nombre as area FROM usuario u JOIN puesto p ON u.id_puesto = p.id_puesto JOIN area a ON p.id_area = a.id_area WHERE u.id_usuario = $1', [id]);
+            const usuario= await pool.query('SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, u.password, u.id_rol, u.id_puesto, u.activo, u.fecha_registro, p.nombre as puesto, a.nombre as area FROM usuario u JOIN puesto p ON u.id_puesto = p.id_puesto JOIN area a ON p.id_area = a.id_area WHERE u.id_usuario = $1', [id]);
         if(usuario.rows.length === 0) return res.status(404).json({message: 'Usuario no encontrado', codigo: 404});
         res.status(200).json(usuario.rows[0]);
     }catch(e){
@@ -49,7 +49,7 @@ const crearUsuario= async(req, res)=>{
 }
 const obtenerUsuarios= async(req, res)=>{
     try{
-        const result= await pool.query('select u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, r.nombre as rol, p.nombre as puesto, a.nombre as area, u.activo, u.fecha_registro from usuario u join rol r on u.id_rol= r.id_rol join puesto p on u.id_puesto= p.id_puesto join area a on p.id_area= a.id_area');
+        const result= await pool.query('select u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, r.nombre as rol, p.nombre as puesto, a.nombre as area, u.activo, u.fecha_registro from usuario u join rol r on u.id_rol= r.id_rol join puesto p on u.id_puesto= p.id_puesto join area a on p.id_area= a.id_area order by u.fecha_registro desc');
         if(result.rowCount===0){
             res.status(404).json({mensaje: 'No hay usuarios guardados', codigo: 404});
         }

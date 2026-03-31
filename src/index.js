@@ -1,6 +1,8 @@
 const express= require('express');
 const app= express();
 const cors= require('cors');
+const authMiddleware = require('./middlewares/authMiddleware');
+const adminMiddleware = require('./middlewares/adminMiddleware');
 
 const assetRouter = require('./routes/assetRoute')
 const rolRouter= require('./routes/rolRoutes');
@@ -18,12 +20,16 @@ app.use(cors());
 app.use(express.json());
 require('dotenv').config();
 
-// app.use('/api/');
+// Login publico
+app.use('/api/auth', authRouter);
+
+// Resto del sistema solo para administradores con token valido
+app.use('/api', authMiddleware, adminMiddleware);
+
 app.use('/api/movimientos', movimientoRouter);
 app.use('/api/assets', assetRouter);
 app.use('/api/roles', rolRouter);
 app.use('/api/usuarios', userRouter);
-app.use('/api/auth', authRouter);
 app.use('/api/auditorias', auditoriaRouter);
 app.use('/api/ubicacion', ubicacionRouter);
 app.use('/api/areas', areaRouter);
