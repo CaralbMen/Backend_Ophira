@@ -10,13 +10,11 @@ const obtenerPuestos= async(req, res)=>{
     }
 }
 const crearPuesto= async(req, res)=>{
-    const {nombre_puesto, nombre, id_area}= req.body;
-    const nombreFinal = String(nombre_puesto ?? nombre ?? '').trim();
-
-    if(!nombreFinal) return res.status(400).json({message: 'El nombre del puesto es requerido'});
+    const {nombre, id_area}= req.body;
+    if(!nombre) return res.status(400).json({message: 'El nombre del puesto es requerido'});
     if(!id_area) return res.status(400).json({message: 'El ID del área es requerido'});
     try{
-        await pool.query('INSERT INTO puesto (nombre, id_area) VALUES ($1, $2)', [nombreFinal, id_area]);
+        await pool.query('INSERT INTO puesto (nombre, id_area) VALUES ($1, $2)', [nombre, id_area]);
         res.status(201).json({message: 'Puesto creado correctamente'});
     } catch (error) {
         console.error('Error al crear el puesto:', error);

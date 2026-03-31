@@ -29,19 +29,19 @@ const login= async(req, res)=>{
                 [usuario.rows[0].id_usuario]
             );
 
-            const idActivoMovimiento = await resolverActivoParaMovimiento(usuario.rows[0].id_usuario, pool);
-            if (idActivoMovimiento) {
-                await registrarMovimientoActualizacion({
-                    idUsuario: usuario.rows[0].id_usuario,
-                    idActivo: idActivoMovimiento,
-                    descripcion: `Inicio de sesion del usuario ${usuario.rows[0].nombre_usuario}`,
-                    campoModificado: 'login',
-                    valorAnterior: null,
-                    valorNuevo: 'sesion_iniciada',
-                    justificacion: 'Registro automatico de autenticacion',
-                    db: pool,
-                });
-            }
+            // const idActivoMovimiento = await resolverActivoParaMovimiento(usuario.rows[0].id_usuario, pool);
+            // if (idActivoMovimiento) {
+            //     await registrarMovimientoActualizacion({
+            //         idUsuario: usuario.rows[0].id_usuario,
+            //         idActivo: idActivoMovimiento,
+            //         descripcion: `Inicio de sesion del usuario ${usuario.rows[0].nombre_usuario}`,
+            //         campoModificado: 'login',
+            //         valorAnterior: null,
+            //         valorNuevo: 'sesion_iniciada',
+            //         justificacion: 'Registro automatico de autenticacion',
+            //         db: pool,
+            //     });
+            // }
         } catch (movError) {
             console.error('No se pudo registrar movimiento de login:', movError);
         }

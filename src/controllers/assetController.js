@@ -51,7 +51,7 @@ const crearActivo = async (req, res) => {
             await registrarMovimientoActualizacion({
                 idUsuario: datos.id_responsable,
                 idActivo: rows[0].id_activo,
-                descripcion: `Alta de activo #${rows[0].id_activo}`,
+                descripcion: `Alta de activo ${rows[0].id_activo}`,
                 campoModificado: 'activo_creado',
                 valorAnterior: null,
                 valorNuevo: JSON.stringify(rows[0]),
@@ -408,7 +408,7 @@ const editarActivo = async(req, res) => {
                 await registrarMovimientoActualizacion({
                     idUsuario: idUsuarioMovimiento,
                     idActivo: Number(id_activo),
-                    descripcion: `Edicion de activo #${id_activo}`,
+                    descripcion: `Edicion de activo ${id_activo}`,
                     campoModificado: 'activo_actualizado',
                     valorAnterior: JSON.stringify(activo),
                     valorNuevo: JSON.stringify(r.rows[0]),
