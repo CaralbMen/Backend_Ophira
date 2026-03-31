@@ -111,4 +111,20 @@ const eliminarUsuario= async(req, res)=>{
     }
 }
 
-module.exports= {crearUsuario, obtenerUsuarios, obtenerUsuario, modificarUsuario, eliminarUsuario};
+
+
+const obtenerUsuarioSesion= async(req, res)=>{
+    const id = req.usuario.id;
+    if(!id) return res.status(400).json({message: 'El ID es requerido'});
+    try{
+        console.log('ID recibido: ', id);
+            const usuario= await pool.query('SELECT u.id_usuario, u.nombre_usuario, u.apellido_paterno, u.apellido_materno, u.correo, u.telefono, u.password, u.id_rol, u.id_puesto, u.activo, u.fecha_registro, p.nombre as puesto, a.nombre as area FROM usuario u JOIN puesto p ON u.id_puesto = p.id_puesto JOIN area a ON p.id_area = a.id_area WHERE u.id_usuario = $1', [id]);
+        if(usuario.rows.length === 0) return res.status(404).json({message: 'Usuario no encontrado', codigo: 404});
+        res.status(200).json(usuario.rows[0]);
+    }catch(e){
+        console.error(e);
+        return res.status(500).json({message: 'Error en el servidor', codigo: 500, error: e});
+    }
+}
+
+module.exports= {crearUsuario, obtenerUsuarios, obtenerUsuario, modificarUsuario, eliminarUsuario, obtenerUsuarioSesion};
