@@ -2,6 +2,7 @@ const pg = require('pg');
 require('dotenv').config();
 
 const sslEnabled = String(process.env.DB_SSL ?? 'true').toLowerCase() !== 'false';
+const dbTimeZone = String(process.env.DB_TIMEZONE || 'America/Mexico_City').trim();
 const dbHostRaw = String(process.env.DB_HOST || '').trim();
 const databaseUrl = String(process.env.DATABASE_URL || '').trim() ||
     (dbHostRaw.startsWith('postgres://') || dbHostRaw.startsWith('postgresql://') ? dbHostRaw : '');
@@ -20,7 +21,15 @@ const pool = databaseUrl
         ssl: sslEnabled ? { rejectUnauthorized: false } : false,
     });
 
-
-pool.on('connect', () => console.log('Conectado exitosamente'));
+pool.on('connect', (client) => {
+    client
+        .query("SELECT set_config('TimeZone', $1, false)", [dbTimeZone])
+        .then(() => {
+            console.log(`Conectado exitosamente (TimeZone=${dbTimeZone})`);
+        })
+        .catch((err) => {
+            console.error('No se pudo establecer la zona horaria de la sesion:', err.message);
+        });
+});
 
 module.exports = pool;

@@ -48,16 +48,11 @@ const crearActivo = async (req, res) => {
         }
 
         try {
-            await registrarMovimientoActualizacion({
-                idUsuario: datos.id_responsable,
-                idActivo: rows[0].id_activo,
-                descripcion: `Alta de activo ${rows[0].id_activo}`,
-                campoModificado: 'activo_creado',
-                valorAnterior: null,
-                valorNuevo: JSON.stringify(rows[0]),
-                justificacion: 'Registro automatico por creacion de activo',
-                db: pool,
-            })
+            await pool.query(
+                `INSERT INTO movimiento (tipo_movimiento, descripcion, id_usuario, id_activo)
+                 VALUES ($1, $2, $3, $4)`,
+                ['Alta', `Alta de activo ${rows[0].id_activo}`, datos.id_responsable, rows[0].id_activo]
+            )
         } catch (movError) {
             console.log('No se pudo registrar movimiento de creacion:', movError)
         }

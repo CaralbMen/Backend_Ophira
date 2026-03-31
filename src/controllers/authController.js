@@ -25,7 +25,7 @@ const login= async(req, res)=>{
 
         try {
             await pool.query(
-                'INSERT INTO login (id_usuario, fecha, hora) VALUES ($1, CURRENT_DATE, CURRENT_TIME)',
+                "INSERT INTO login (id_usuario, fecha, hora) VALUES ($1, (CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City')::date, (CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City')::time)",
                 [usuario.rows[0].id_usuario]
             );
 
