@@ -53,9 +53,19 @@ const editarRol= async(req, res)=>{
 const eliminaRol= async(req, res)=>{
     const nombre= req.params.nombre;
     try{
+        const rol = await pool.query('select id_rol from rol where nombre = $1', [nombre]);
+        if (rol.rowCount === 0) {
+            return res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
+        }
+
+        const usuariosAsignados = await pool.query('select count(*)::int as total from usuario where id_rol = $1', [rol.rows[0].id_rol]);
+        if ((usuariosAsignados.rows[0]?.total || 0) > 0) {
+            return res.status(409).json({mensaje: 'Error al eliminar rol. Hay usuarios asignados a este rol.', codigo: 409});
+        }
+
         const result= await pool.query('delete from rol where nombre= $1', [nombre]);
-        if(result.affectedRows===0){
-            res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
+        if(result.rowCount===0){
+            return res.status(404).json({mensaje: `No se encontró el rol ${nombre}`, codigo: 404});
         }
         res.status(200).json({mensaje: `Rol ${nombre} eliminado correctamente`, codigo: 200});
     }catch(e){

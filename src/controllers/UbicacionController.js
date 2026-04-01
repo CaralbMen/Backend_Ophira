@@ -26,6 +26,59 @@ const crearEdificio= async(req, res)=>{
         res.status(500).json({message: 'Error al crear el edificio'});
     }
 }
+const editarEdificio = async(req, res) => {
+    const { id_edificio } = req.params;
+    const { nombre, cantidad_pisos, direccion } = req.body;
+
+    try {
+        const existente = await pool.query('SELECT * FROM edificio WHERE id_edificio = $1', [id_edificio.toUpperCase()]);
+        if (existente.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro el edificio ${id_edificio}` });
+        }
+
+        const actual = existente.rows[0];
+
+        const result = await pool.query(
+            `UPDATE edificio
+             SET nombre = $2,
+                 cantidad_pisos = $3,
+                 direccion = $4
+             WHERE id_edificio = $1
+             RETURNING *`,
+            [
+                id_edificio.toUpperCase(),
+                nombre || actual.nombre,
+                cantidad_pisos || actual.cantidad_pisos,
+                direccion || actual.direccion
+            ]
+        );
+
+        res.status(200).json({ message: 'Edificio actualizado correctamente', edificio: result.rows[0] });
+    } catch (error) {
+        console.error('Error al editar el edificio:', error);
+        res.status(500).json({ message: 'Error al editar el edificio' });
+    }
+}
+const eliminarEdificio = async(req, res) => {
+    const { id_edificio } = req.params;
+
+    try {
+        const pisosRelacionados = await pool.query('SELECT count(*)::int as total FROM piso WHERE id_edificio = $1', [id_edificio.toUpperCase()]);
+        if ((pisosRelacionados.rows[0]?.total || 0) > 0) {
+            return res.status(409).json({ message: 'Error al eliminar edificio. Hay pisos en este edificio.' });
+        }
+
+        const result = await pool.query('DELETE FROM edificio WHERE id_edificio = $1 RETURNING *', [id_edificio.toUpperCase()]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro el edificio ${id_edificio}` });
+        }
+
+        res.status(200).json({ message: 'Edificio eliminado correctamente', edificio: result.rows[0] });
+    } catch (error) {
+        console.error('Error al eliminar el edificio:', error);
+        res.status(500).json({ message: 'Error al eliminar el edificio' });
+    }
+}
 
 // Pisos
 const getPisos= async(req, res)=>{
@@ -60,6 +113,59 @@ const crearPiso= async(req, res)=>{
     } catch (error) {
         console.error('Error al crear el piso:', error);
         res.status(500).json({message: 'Error al crear el piso'});
+    }
+}
+const editarPiso = async(req, res) => {
+    const { id_piso } = req.params;
+    const { numero_piso, cantidad_aulas, id_edificio } = req.body;
+
+    try {
+        const existente = await pool.query('SELECT * FROM piso WHERE id_piso = $1', [id_piso.toUpperCase()]);
+        if (existente.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro el piso ${id_piso}` });
+        }
+
+        const actual = existente.rows[0];
+
+        const result = await pool.query(
+            `UPDATE piso
+             SET id_edificio = $2,
+                 numero_piso = $3,
+                 cantidad_aulas = $4
+             WHERE id_piso = $1
+             RETURNING *`,
+            [
+                id_piso.toUpperCase(),
+                id_edificio || actual.id_edificio,
+                numero_piso || actual.numero_piso,
+                cantidad_aulas || actual.cantidad_aulas
+            ]
+        );
+
+        res.status(200).json({ message: 'Piso actualizado correctamente', piso: result.rows[0] });
+    } catch (error) {
+        console.error('Error al editar el piso:', error);
+        res.status(500).json({ message: 'Error al editar el piso' });
+    }
+}
+const eliminarPiso = async(req, res) => {
+    const { id_piso } = req.params;
+
+    try {
+        const aulasRelacionadas = await pool.query('SELECT count(*)::int as total FROM aula WHERE id_piso = $1', [id_piso.toUpperCase()]);
+        if ((aulasRelacionadas.rows[0]?.total || 0) > 0) {
+            return res.status(409).json({ message: 'Error al eliminar piso. Hay aulas en este piso.' });
+        }
+
+        const result = await pool.query('DELETE FROM piso WHERE id_piso = $1 RETURNING *', [id_piso.toUpperCase()]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: `No se encontro el piso ${id_piso}` });
+        }
+
+        res.status(200).json({ message: 'Piso eliminado correctamente', piso: result.rows[0] });
+    } catch (error) {
+        console.error('Error al eliminar el piso:', error);
+        res.status(500).json({ message: 'Error al eliminar el piso' });
     }
 }
 
@@ -137,6 +243,11 @@ const eliminarAula = async (req, res) => {
     const { id_aula } = req.params;
 
     try {
+        const activosRelacionados = await pool.query('SELECT count(*)::int as total FROM activo WHERE id_aula = $1', [id_aula.toUpperCase()]);
+        if ((activosRelacionados.rows[0]?.total || 0) > 0) {
+            return res.status(409).json({ message: 'Error al eliminar aula. Hay activos asignados a esta aula.' });
+        }
+
         const result = await pool.query('DELETE FROM aula WHERE id_aula = $1 RETURNING *', [id_aula.toUpperCase()]);
         if (result.rowCount === 0) {
             return res.status(404).json({ message: `No se encontro la aula ${id_aula}` });
@@ -153,9 +264,13 @@ const eliminarAula = async (req, res) => {
 module.exports= {
     getEdificios,
     crearEdificio,
+    editarEdificio,
+    eliminarEdificio,
     getPisos,
     getPisosEdificio,
     crearPiso,
+    editarPiso,
+    eliminarPiso,
     getAulas,
     getAulasPiso,
     crearAula,

@@ -487,7 +487,12 @@ const editarActivo = async(req, res) => {
             console.log(rollbackError)
         }
         console.log(e)
-        res.status(500).json({err: e})
+        const detalle = e?.detail || e?.message || 'Error desconocido al actualizar activo'
+        res.status(500).json({
+            message: `Error al actualizar activo: ${detalle}`,
+            code: e?.code || null,
+            detail: e?.detail || null
+        })
     }
 }
 const getActivoFront = async(req, res) => {

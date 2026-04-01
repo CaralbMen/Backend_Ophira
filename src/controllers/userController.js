@@ -100,8 +100,13 @@ const modificarUsuario= async(req, res)=>{
 const eliminarUsuario= async(req, res)=>{
     const id= req.params.id;
     try{
-        const result= await pool.query('DELETE FROM usuario WHERE id=$1', [id]);
-        if(result.affectedRows === 0){
+        const activosAsignados = await pool.query('SELECT count(*)::int as total FROM activo WHERE id_responsable = $1', [id]);
+        if ((activosAsignados.rows[0]?.total || 0) > 0) {
+            return res.status(409).json({message: 'Error al eliminar usuario. Hay activos asignados a este usuario.', codigo: 409});
+        }
+
+        const result= await pool.query('DELETE FROM usuario WHERE id_usuario = $1', [id]);
+        if(result.rowCount === 0){
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
         res.status(200).json({mensaje: 'Usuario eliminado exitosamente', codigo: 200});
