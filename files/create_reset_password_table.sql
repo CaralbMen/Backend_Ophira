@@ -1,6 +1,6 @@
 -- Script para crear tabla de tokens de recuperación de contraseña
 -- Ejecutar este script en la base de datos de Ophira
-
+-- Ajuste para email
 CREATE TABLE IF NOT EXISTS reset_password_token (
     id SERIAL PRIMARY KEY,
     id_usuario INT NOT NULL,
