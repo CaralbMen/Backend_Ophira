@@ -86,7 +86,7 @@ const verActivos = async(req, res) => { // ver TODOS los activos
         res.status(500).json({err: e})
     }
 }
-const verActivosDelUser = async (req, res) => {
+/* const verActivosDelUser2 = async (req, res) => {
     const id = req.usuario.id
 
     try {
@@ -108,6 +108,35 @@ const verActivosDelUser = async (req, res) => {
                 ON a.id_aula = au.id_aula
             WHERE ar.id_usuario = $1
               AND ar.fecha_fin IS NULL
+        `, [id])
+
+        res.status(200).json({ rows })
+
+    } catch (e) {
+        console.log(e)
+        res.status(500).json({ err: e })
+    }
+} */
+const verActivosDelUser = async (req, res) => {
+    const id = req.usuario.id
+    console.log("id recibido: " + id)
+
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                a.*, 
+                c.nombre AS categoria_nombre,
+                e.nombre AS estado_nombre,
+                au.numero_aula,
+                au.tipo AS tipo_aula
+            FROM activo a
+            JOIN categoria c 
+                ON a.id_categoria = c.id_categoria
+            JOIN estado_activo e 
+                ON a.id_estado_activo = e.id_estado_activo
+            JOIN aula au 
+                ON a.id_aula = au.id_aula
+            WHERE a.id_responsable = $1
         `, [id])
 
         res.status(200).json({ rows })
