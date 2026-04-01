@@ -23,8 +23,8 @@ require('dotenv').config();
 // Login publico
 app.use('/api/auth', authRouter);
 
-// Resto del sistema solo para administradores con token valido
-app.use('/api', authMiddleware, adminMiddleware);
+// Resto del sistema solo para usuarios con token valido
+app.use('/api', authMiddleware);
 
 app.use('/api/movimientos', movimientoRouter);
 app.use('/api/assets', assetRouter);
