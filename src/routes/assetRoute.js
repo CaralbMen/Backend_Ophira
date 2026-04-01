@@ -21,6 +21,7 @@ router.get('/activo/:id', assetController.getActivoFront);
 // EDITAR Y ELIMINAR
 router.delete('/:id', assetController.dropActivo)
 router.put('/:id', assetController.editarActivo)
+router.post('/cambiarAula', assetController.cambiarAula)
 
 // Datos del dash
 router.get('/dashboard', assetController.getDatosDashboard);

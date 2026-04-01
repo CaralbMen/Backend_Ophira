@@ -230,7 +230,6 @@ const buscarActivoAula = async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT
-        -- 🔥 Activo (explicit to avoid overwrite)
         a.id_activo,
         a.nombre AS activo_nombre,
         a.descripcion,
@@ -577,6 +576,76 @@ const getActivosFront= async(req, res)=>{
     }
 }
 
+
+const cambiarAula = async (req, res) => {
+    const { id_activo, id_aula_destino } = req.body
+    const id_usuario = req.usuario?.id || req.body.id_usuario
+
+    if (!id_activo || !id_aula_destino) {
+        return res.status(400).json({ msg: "id_activo y id_aula_destino son requeridos" })
+    }
+
+    try {
+        await pool.query('BEGIN')
+
+        const { rows } = await pool.query(
+            'SELECT id_aula FROM activo WHERE id_activo = $1',
+            [id_activo]
+        )
+
+        if (rows.length === 0) {
+            await pool.query('ROLLBACK')
+            return res.status(404).json({ msg: "Activo no encontrado" })
+        }
+
+        const id_aula_origen = rows[0].id_aula
+
+        if (id_aula_origen === id_aula_destino) {
+            await pool.query('ROLLBACK')
+            return res.status(400).json({ msg: "El activo ya está en esa aula" })
+        }
+
+        await pool.query(
+            'UPDATE activo SET id_aula = $1 WHERE id_activo = $2',
+            [id_aula_destino, id_activo]
+        )
+
+        const movimientoResult = await pool.query(
+            `INSERT INTO movimiento (tipo_movimiento, descripcion, id_usuario, id_activo)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id_movimiento`,
+            [
+                'Cambio de ubicación',
+                `Cambio de aula de ${id_aula_origen} a ${id_aula_destino}`,
+                id_usuario,
+                id_activo
+            ]
+        )
+
+        const id_movimiento = movimientoResult.rows[0].id_movimiento
+
+        await pool.query(
+            `INSERT INTO movimiento_ubicacion (id_movimiento, id_aula_origen, id_aula_destino)
+             VALUES ($1, $2, $3)`,
+            [id_movimiento, id_aula_origen, id_aula_destino]
+        )
+
+        await pool.query('COMMIT')
+
+        res.status(200).json({
+            msg: "Aula actualizada correctamente",
+            id_activo,
+            aula_anterior: id_aula_origen,
+            aula_nueva: id_aula_destino
+        })
+
+    } catch (e) {
+        await pool.query('ROLLBACK')
+        console.log(e)
+        res.status(500).json({ err: e })
+    }
+}
+
 const getDatosDashboard = async(req, res) => {
     try {
         const response = await pool.query(`select * from dashboard`);
@@ -596,4 +665,4 @@ const getDatosReporte= async(req, res) => {
         }
 }
 
-module.exports = { verActivosDelUser, buscarActivoAula ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo }
+module.exports = { verActivosDelUser, buscarActivoAula ,crearActivo, verActivos, buscarActivoId, buscarActivoNombre, dropActivo, editarActivo, getActivosFront, getActivoFront, getDatosDashboard, getDatosReporte, getUltimosMovimientosActivo, cambiarAula }
