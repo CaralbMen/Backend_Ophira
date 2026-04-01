@@ -4,12 +4,15 @@ const jwt = require('jsonwebtoken');
 const { resolverActivoParaMovimiento, registrarMovimientoActualizacion } = require('../utils/movimientoLogger');
 const { enviarCodigoRecuperacion } = require('../utils/emailService');
 
+const normalizarCorreo = (correo = '') => String(correo || '').trim().toLowerCase();
+
 const login= async(req, res)=>{
-    const {correo, password}= req.body;
+    const correo = normalizarCorreo(req.body?.correo);
+    const {password}= req.body;
     console.log('Correo recibido: ', correo);
 
     try{
-        const usuario= await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
+        const usuario= await pool.query('SELECT * FROM usuario WHERE lower(trim(correo)) = $1', [correo]);
         if(usuario.rows.length === 0) return res.status(401).json({message: 'Usuario no encontrado'});
         const isMatch= await bcrypt.compare(password, usuario.rows[0].password);
         if(!isMatch) return res.status(401).json({message: 'Contraseña incorrecta'});
@@ -59,11 +62,15 @@ const login= async(req, res)=>{
 
 // Solicitar recuperación de contraseña - genera código de 4 dígitos
 const forgotPassword = async(req, res) => {
-    const { correo } = req.body;
+    const correo = normalizarCorreo(req.body?.correo);
+
+    if(!correo) {
+        return res.status(400).json({message: 'El correo es requerido'});
+    }
 
     try {
         // Verificar si el usuario existe
-        const usuario = await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
+        const usuario = await pool.query('SELECT * FROM usuario WHERE lower(trim(correo)) = $1', [correo]);
         if(usuario.rows.length === 0) {
             return res.status(404).json({message: 'Usuario no encontrado'});
         }
@@ -93,7 +100,8 @@ const forgotPassword = async(req, res) => {
             console.error('Error al enviar correo:', emailError);
             res.status(500).json({
                 message: 'Hubo un error al enviar el correo. Por favor intenta de nuevo.',
-                codigo: 500
+                codigo: 500,
+                error: emailError?.message || String(emailError)
             });
         }
 
@@ -105,11 +113,16 @@ const forgotPassword = async(req, res) => {
 
 // Verificar código de recuperación
 const verifyResetCode = async(req, res) => {
-    const { correo, codigo } = req.body;
+    const correo = normalizarCorreo(req.body?.correo);
+    const { codigo } = req.body;
+
+    if(!correo || !codigo) {
+        return res.status(400).json({message: 'Faltan datos requeridos'});
+    }
 
     try {
         // Obtener usuario por correo
-        const usuario = await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
+        const usuario = await pool.query('SELECT * FROM usuario WHERE lower(trim(correo)) = $1', [correo]);
         if(usuario.rows.length === 0) {
             return res.status(404).json({message: 'Usuario no encontrado'});
         }
@@ -140,7 +153,8 @@ const verifyResetCode = async(req, res) => {
 
 // Cambiar contraseña con código de recuperación
 const resetPassword = async(req, res) => {
-    const { correo, codigo, nuevaPassword } = req.body;
+    const correo = normalizarCorreo(req.body?.correo);
+    const { codigo, nuevaPassword } = req.body;
 
     try {
         // Validar que se proporcionaron todos los datos
@@ -149,7 +163,7 @@ const resetPassword = async(req, res) => {
         }
 
         // Obtener usuario por correo
-        const usuario = await pool.query('SELECT * FROM usuario WHERE correo = $1', [correo]);
+        const usuario = await pool.query('SELECT * FROM usuario WHERE lower(trim(correo)) = $1', [correo]);
         if(usuario.rows.length === 0) {
             return res.status(404).json({message: 'Usuario no encontrado'});
         }

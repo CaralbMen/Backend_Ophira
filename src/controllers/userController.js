@@ -1,5 +1,12 @@
 const pool= require('../config/db');
 const bcrypt= require('bcryptjs');
+const { enviarNotificacionCambioPassword } = require('../utils/emailService');
+
+const esPasswordSegura = (password = '') => {
+    const trimmed = String(password).trim();
+    // Minimo 8 caracteres, con mayuscula, minuscula, numero y simbolo.
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(trimmed);
+};
 
 
 const obtenerUsuario= async(req, res)=>{
@@ -30,6 +37,9 @@ const crearUsuario= async(req, res)=>{
         if(!id_rol) return res.status(400).json({message: 'El id del rol es requerido'});
         if(!id_puesto) return res.status(400).json({message: 'El id del puesto es requerido'});
         if(!password) return res.status(400).json({message: 'La contraseña es requerida'});
+        if(!esPasswordSegura(password)) {
+            return res.status(400).json({message: 'La contraseña debe tener minimo 8 caracteres e incluir mayuscula, minuscula, numero y caracter especial'});
+        }
         try{
             const salt= await bcrypt.genSalt(10);
             const hashedPassword= await bcrypt.hash(password, salt);
@@ -70,14 +80,22 @@ const modificarUsuario= async(req, res)=>{
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
 
+        let passwordActualizada = false;
+        let nuevaPasswordPlano = '';
+
         if(nombre_usuario) usuario.rows[0].nombre_usuario= nombre_usuario;
         if(apellido_paterno) usuario.rows[0].apellido_paterno= apellido_paterno;
         if(apellido_materno) usuario.rows[0].apellido_materno= apellido_materno;
         if(correo) usuario.rows[0].correo= correo;
         if(password){
+            if(!esPasswordSegura(password)) {
+                return res.status(400).json({message: 'La contraseña debe tener minimo 8 caracteres e incluir mayuscula, minuscula, numero y caracter especial'});
+            }
             const salt= await bcrypt.genSalt(10);
             const hashedPassword= await bcrypt.hash(password, salt);
             usuario.rows[0].password= hashedPassword;
+            passwordActualizada = true;
+            nuevaPasswordPlano = password;
         }
         if(telefono) usuario.rows[0].telefono= telefono;
         if(id_rol) usuario.rows[0].id_rol= id_rol;
@@ -91,7 +109,27 @@ const modificarUsuario= async(req, res)=>{
             return res.status(404).json({mensaje: 'Usuario no encontrado', codigo: 404});
         }
 
-        res.status(200).json({mensaje: 'Usuario modificado exitosamente', usuario: result.rows[0], codigo: 200});
+        let notificacionPasswordEnviada = false;
+        if (passwordActualizada && usuario.rows[0].correo) {
+            try {
+                await enviarNotificacionCambioPassword(
+                    usuario.rows[0].correo,
+                    usuario.rows[0].nombre_usuario,
+                    nuevaPasswordPlano
+                );
+                notificacionPasswordEnviada = true;
+            } catch (emailError) {
+                console.error('No se pudo enviar notificacion de cambio de contraseña:', emailError);
+            }
+        }
+
+        res.status(200).json({
+            mensaje: 'Usuario modificado exitosamente',
+            usuario: result.rows[0],
+            codigo: 200,
+            passwordActualizada,
+            notificacionPasswordEnviada
+        });
     }catch(e){
         console.error(e);
         res.status(500).json({message: 'Error al modificar el usuario', codigo: 500, error: e});
